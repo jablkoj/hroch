@@ -1,4 +1,5 @@
 #include"constants.h"
+#include <iomanip>
 
 char bases[BASES] = {'A', 'C', 'G', 'T'};
 int base_id[256];
@@ -11,4 +12,5 @@ void setup_constants() {
         base_id[(int)bases[i]] = i;
         base_inv[(int)bases[i]] = bases[BASES-1-i];
     }
+    cout << fixed << setprecision(6);
 }

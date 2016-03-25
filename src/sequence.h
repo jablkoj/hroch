@@ -5,8 +5,9 @@
 
 class Sequence {
 public:
-    Atom* first;
+    GAtom* first;
     double age;
+    string name;
    
     Sequence(double age = 0.0, int length = 0);
     Sequence(Sequence* parent);
@@ -14,6 +15,11 @@ public:
     int length();
     void mutate(double time);
     void split_breakpoints(vector<int> positions);
+
+    set<GAtomType*> retype_atoms(int length_threshold = 0);
+    void write_dna(ostream& os = cout, const string& sep = "\n");
+    void write_atoms_short(ostream& os = cout, const string& sep = "\n");
+    void write_atoms(ostream& os = cout);
 };
 
 ostream& operator<<(ostream& os, const Sequence& sequence);

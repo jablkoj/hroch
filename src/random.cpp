@@ -50,21 +50,21 @@ char Model::get_mutated_base(char base, double time) {
     return (random_double() < exp(-4.*mut_alpha*time))?base:bases[rand()%BASES];
 }
 
-Event* Model::get_random_event(int sequence_length) {
+GEvent* Model::get_random_event(int sequence_length) {
     double time_interval = this->get_random_time();
     int length = this->get_random_len();
     while(length > sequence_length) length = this->get_random_len();
     int from = random_int(0, sequence_length - length + 1);
     
     if (this->is_random_del()) {
-        return new EventDel(from, from + length, time_interval);
+        return new GEventDel(from, from + length, time_interval);
     } else {
         int to = random_int(0, sequence_length - length + 1);
         if (to > from) to += length;
         if (this->is_random_inv()) {
-            return new EventDupi(from, from+length, to, time_interval);
+            return new GEventDupi(from, from+length, to, time_interval);
         } else {
-            return new EventDup(from, from+length, to, time_interval);
+            return new GEventDup(from, from+length, to, time_interval);
         }
     }
 }

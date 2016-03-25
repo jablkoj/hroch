@@ -4,6 +4,7 @@
 #include<cstdio>
 #include<iostream>
 #include<sstream>
+#include<fstream>
 #include<string>
 #include<algorithm>
 #include<vector>
@@ -17,19 +18,23 @@ using namespace std;
 #define For(i,n) for(int i=0; i<int(n); ++i)
 #define SIZE(i) int(i.size())
 #define BASES 4
+#define DATAPATH "data/"
 
 extern char bases[];
 struct trint;
-class Atom;
-class Event;
+class GAtom;
+class GAtomType;
+class GEvent;
 class Sequence;
-//class AtomTree;
-//class History;
+class HEvent;
+class History;
 
 #include"random.h"
-#include"atom.h"
-#include"event.h"
+#include"gatom.h"
+#include"gevent.h"
+#include"hevent.h"
 #include"sequence.h"
+#include"history.h"
 
 typedef pair<int, int> pii;
 typedef pair<pii, int> piii;
@@ -71,6 +76,10 @@ ostream& operator<<(ostream& os, const vector<T> v) {
     os << "[";
     For(i, SIZE(v)) (i?(os << ", "):os) << v[i]; 
     return os << ']';
+}
+template <typename T> 
+int sign(T val) {
+    return (T(0) < val) - (val < T(0));
 }
 
 extern int debuging;

@@ -14,17 +14,19 @@ private:
     geometric_distribution<int> distance_distribution;
 
     const double prob_del = 0.05;
-    const double prob_inv = 0.39;
-    const int mean_len = 30;//14307;
-    const int mean_dist = 200;//306718;
+    const double prob_inv = 0.3902;
+    const int mean_len = 14307;
+    const int mean_dist = 306718;
     const double event_rate = 200;
     const double mut_alpha = 1./3.;
-    
+
+   
     static Model* _instance;
     Model();
 public:
     static Model* instance();
     
+    const int length_threshold = 20;
     bool is_random_del();
     bool is_random_inv();
     int get_random_len();
@@ -32,7 +34,7 @@ public:
     double get_random_time();
     char get_mutated_base(char base, double time);
 
-    Event* get_random_event(int sequence_length);
+    GEvent* get_random_event(int sequence_length);
 };
 
 #endif

@@ -1,16 +1,26 @@
-#include"atom.h"
+#include"gatom.h"
 
-int AtomType::type_cnt = 0;
+string invert_dna(const string& str, bool really = true) {
+    if (!really) return str;
+    string res = string(SIZE(str), 0);
+    For(i, SIZE(str)) res[i] = base_inv[int(str[SIZE(str)-1-i])];
+    return res;
+}
 
-void AtomType::split(int position) {
+int GAtomType::type_cnt = 0;
+
+void GAtomType::split(int position) {
     this->root->split(position, nullptr, nullptr);
 }
-AtomType::AtomType(Atom* root) {
+void GAtomType::invert() {
+    this->root->hard_invert();
+}
+GAtomType::GAtomType(GAtom* root) {
     this->root = root;
     this->id = ++type_cnt;
 }
 
-bool Atom::change_parent(Atom* new_parent) {
+bool GAtom::change_parent(GAtom* new_parent) {
     if (new_parent != nullptr) this->type = new_parent->type;
     if (parent == new_parent) return false;
     if (parent != nullptr) { 
@@ -23,51 +33,57 @@ bool Atom::change_parent(Atom* new_parent) {
     return true;
 }
 
-void Atom::invert() {
+void GAtom::invert() {
     inverted = !inverted; 
 }
+void GAtom::hard_invert() {
+    inverted = !inverted;
+    dna = invert_dna(dna);
+    for(GAtom* child : children)
+        child->hard_invert();
+}
 
-void Atom::mutate(double time) {
+void GAtom::mutate(double time) {
     for(auto& c : dna) 
         c = Model::instance()->get_mutated_base(c, time);
 }
-void Atom::split(int position, Atom* first_parent, Atom* second_parent) {
+void GAtom::split(int position, GAtom* first_parent, GAtom* second_parent) {
     if (inverted) {
-        Atom* first = new Atom(first_parent, dna.substr(0, position));
+        GAtom* first = new GAtom(first_parent, dna.substr(0, position));
         first->inverted = inverted;
         dna = dna.substr(position);
         this->change_parent(second_parent); 
         first->next = this->next;
         this->next = first;
-        vector<Atom*> children_copy = children;
-        for(Atom* child : children_copy)
+        vector<GAtom*> children_copy = children;
+        for(GAtom* child : children_copy)
             child->split(position, first, this);
     } else {
-        Atom* second = new Atom(second_parent, dna.substr(position));
+        GAtom* second = new GAtom(second_parent, dna.substr(position));
         second->inverted = inverted;
         dna.resize(position);
         this->change_parent(first_parent);
         second->next = this->next;
         this->next = second;
-        vector<Atom*> children_copy = children;
-        for(Atom* child : children_copy)
+        vector<GAtom*> children_copy = children;
+        for(GAtom* child : children_copy)
             child->split(position, this, second);
     } 
 }
     
-Atom::Atom(int length) {
+GAtom::GAtom(int length) {
     this->inverted = 0;
     this->next = nullptr;
     this->parent = nullptr;
-    this->type = new AtomType(this);
+    this->type = new GAtomType(this);
     dna = "";
     For(i, length) dna += bases[rand()%BASES];
 }
 
-Atom::Atom(Atom* parent, const string &dna) {
+GAtom::GAtom(GAtom* parent, const string &dna) {
     if ((this->parent = parent) == nullptr) {
         this->inverted = 0;
-        this->type = new AtomType(this);
+        this->type = new GAtomType(this);
         this->next = nullptr;
     } else {
         this->type = parent->type;
@@ -78,25 +94,12 @@ Atom::Atom(Atom* parent, const string &dna) {
     this->dna = dna;
 }
 
-string invert_dna(const string& str, bool really = true) {
-    if (!really) return str;
-    string res = string(SIZE(str), 0);
-    For(i, SIZE(str)) res[i] = base_inv[int(str[SIZE(str)-1-i])];
-    return res;
+void GAtom::write_dna(ostream& os, const string& sep) {
+    os << invert_dna(dna, inverted) << sep;
 }
-
-void Atom::write_dna(ostream& os, string sep) {
-    if (dna.size() <= 50)
-        os << invert_dna(dna, inverted) << sep;
-    else
-        os << ".." << dna.size() << ".." << sep;
-}
-void Atom::write_type(ostream& os, string sep) {
+void GAtom::write_type(ostream& os, const string& sep) {
     os << get_id() << sep;
 }
-ostream& operator<<(ostream& os, Atom& atom) {
-    //atom.write_type(os, "(");
-    //atom.write_dna(os, ") ");
-    atom.write_dna(os, "");
-    return os;
+ostream& operator<<(ostream& os, GAtom& atom) {
+    return os << atom.get_id() << "(" << atom.length() << ")";
 }

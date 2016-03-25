@@ -1,5 +1,11 @@
+# Data
+mrbayes-3.2.6
+
 # Tempfiles
 *.swp
+*~
+*.temp
+
 
 # Compiled Object files
 *.slo

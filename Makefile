@@ -14,9 +14,9 @@ OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 # compiler and flags
 
 CXX=g++
-CXXFLAGS=-O2 -std=gnu++11
+CXXFLAGS=-std=gnu++11 -O2
 RM=rm
-WFLAGS=-Wall -Wextra -Wno-unused-result -static
+WFLAGS=-Wall -Wextra -Wno-unused-result
 #-g -pg -static
 
 # commands
@@ -27,7 +27,7 @@ $(BINDIR)/$(TARGET): $(OBJECTS)
 	$(CXX) -o $@ $(WFLAGS) $(OBJECTS)
 	@echo "Done."
 
-$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp $(INCLUDES)
 	$(CXX) $(CXXFLAGS) $(WFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully."
 
