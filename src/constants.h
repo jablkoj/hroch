@@ -16,9 +16,11 @@
 using namespace std;
 
 #define For(i,n) for(int i=0; i<int(n); ++i)
+#define ForGAtom(atom, sequence) for(GAtom* atom = (sequence)->first; atom != nullptr; atom = atom->next)
 #define SIZE(i) int(i.size())
 #define BASES 4
 #define DATAPATH "data/"
+#define epsilon 1e-10
 
 extern char bases[];
 struct trint;
@@ -26,12 +28,14 @@ class GAtom;
 class GAtomType;
 class GEvent;
 class Sequence;
+class HAtom;
 class HEvent;
 class History;
 
 #include"random.h"
 #include"gatom.h"
 #include"gevent.h"
+#include"hatom.h"
 #include"hevent.h"
 #include"sequence.h"
 #include"history.h"
@@ -59,13 +63,13 @@ struct trint {
         this->c = c;
     }
 };
-inline bool operator==(const trint& t1, const trint& t2){
+inline bool operator==(const trint& t1, const trint& t2) {
     return t1.a==t2.a && t1.b==t2.b && t1.c==t2.c;
 }
-inline bool operator!=(const trint& t1, const trint& t2){
+inline bool operator!=(const trint& t1, const trint& t2) {
     return t1.a!=t2.a || t1.b!=t2.b || t1.c!=t2.c;
 }
-inline bool operator<(const trint& t1, const trint& t2){
+inline bool operator<(const trint& t1, const trint& t2) {
     if (t1.a!=t2.a) return t1.a<t2.a;
     if (t1.b!=t2.b) return t1.b<t2.b;
     return t1.c<t2.c;
@@ -87,8 +91,8 @@ extern char bases[BASES];
 extern int base_id[256];
 extern char base_inv[256];
 
-inline void mustbe(const bool& True, const string& message=""){
-    if (True!=true){
+inline void mustbe(const bool& True, const string& message="") {
+    if (True!=true) {
         cerr << "Error: " << message << endl; 
         exit(1);
     }

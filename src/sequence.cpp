@@ -9,11 +9,8 @@ Sequence::Sequence(double age, int length) {
 
 Sequence::Sequence(Sequence* parent) : Sequence(parent->age, 0) {
     first = (!parent->first)?nullptr:new GAtom(parent->first, parent->first->get_dna());
-    GAtom* atom = first;
-    while(atom) {
+    ForGAtom(atom, this)
         atom->next = (!atom->next)?nullptr:new GAtom(atom->next, atom->next->get_dna());
-        atom = atom->next;
-    }
 }
 
 Sequence::~Sequence() {
@@ -27,21 +24,18 @@ Sequence::~Sequence() {
 
 int Sequence::length() {
     int len = 0;
-    GAtom* atom = first;
-    while(atom != nullptr) {
-        len += atom->length();
-        atom = atom->next;
-    }
+    ForGAtom(atom, this) len+=atom->length();
+    return len;
+}
+int Sequence::atom_count() {
+    int len = 0;
+    ForGAtom(atom, this) len+=1;
     return len;
 }
 
 void Sequence::mutate(double time) {
     age += time;
-    GAtom* atom = first;
-    while(atom != nullptr) {
-        atom->mutate(time);
-        atom = atom->next;
-    }
+    ForGAtom(atom, this) atom->mutate(time);
 }
 
 void Sequence::split_breakpoints(vector<int> positions) {
@@ -59,9 +53,8 @@ void Sequence::split_breakpoints(vector<int> positions) {
 
 set<GAtomType*> Sequence::retype_atoms(int length_threshold) {
     set<GAtomType*> res; 
-    GAtom* atom = first;
     int name_id = 0;
-    while(atom != nullptr) {
+    ForGAtom(atom, this) {
         if (atom->length() < length_threshold) {
             atom->get_type()->id = 0;
         } else {
@@ -72,50 +65,34 @@ set<GAtomType*> Sequence::retype_atoms(int length_threshold) {
                 if (atom->is_inverted()) atom->get_type()->invert();
             }
         }
-        atom = atom->next;
     }
     return res;
 }
 
 void Sequence::write_dna(ostream& os, const string& sep) {
-    GAtom* atom = first;
-    while(atom != nullptr) {
-        atom->write_dna(os, "");
-        atom = atom->next;
-    }
+    ForGAtom(atom, this) atom->write_dna(os, "");
     os << sep;
 }
 
 void Sequence::write_atoms_short(ostream& os, const string& sep) {
-    GAtom* atom = first;
-    while(atom != nullptr) {
-        if (atom->get_id()) atom->write_type(os, " ");
-        atom = atom->next;
-    }
+    ForGAtom(atom, this) if (atom->get_id()) atom->write_type(os, " ");
     os << sep;
 }
 
 void Sequence::write_atoms(ostream& os) {
-    GAtom* atom = first;
     int pos = 0;
-    while(atom != nullptr) {
+    ForGAtom(atom, this) {
         if (atom->get_id()) {
             os << name << " " << atom->get_name() << " " << abs(atom->get_id()) << " "
                << sign(atom->get_id()) << " " << pos << " " << pos + atom->length() << endl;
         }
         pos += atom->length();
-        atom = atom->next;    
     }
 }
 
 ostream& operator<<(ostream& os, const Sequence& sequence) {
     os << sequence.age << ": ";
-    GAtom* atom = sequence.first;
-    while(atom != nullptr) {
-        os << *atom << " ";
-        atom = atom->next;
-    }
-    os << endl;
-    return os;
+    ForGAtom(atom, &sequence) os << *atom << " ";
+    return os << endl;
 }
 

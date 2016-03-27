@@ -1,7 +1,7 @@
 #include"history.h"
-#include<sys/stat.h>
+#include"files.h"
 
-void History::generate_random(double time, int sequence_length) {
+void History::clean() {
     if (SIZE(sequences)) {
         this->types = sequences[0]->retype_atoms(0);
         for(auto t : types) delete t;
@@ -12,31 +12,51 @@ void History::generate_random(double time, int sequence_length) {
     for(auto e : events) delete e;
     events.clear();
     GAtomType::reset_ids(); 
-    
+    HAtom::clear_strid_mapping();
+}
+
+void History::generate_random(double time, int sequence_length) {
+    clean(); 
     sequences.push_back(new Sequence(0.0, sequence_length));
+    int event_count = 0;
+    GEventRoot root;
+    events.push_back(new HEvent("e"+to_string(++event_count), &root, sequences.back()));
 
     double current_time = 0.0;
-    while(current_time < time) {
+    while(current_time < time - epsilon) {
         Sequence* seq = sequences.back();
         GEvent* event = Model::instance()->get_random_event(seq->length());
         while (event->get_length() == 0) {
             delete event;
             event = Model::instance()->get_random_event(seq->length());
         }
-        current_time = event->get_time(current_time);
-        
+        if (event->get_time(current_time) > time) {
+            delete event;
+            event = new GEventLeaf(time-current_time); 
+        }
+        current_time = event->get_time(current_time); 
         Sequence* nextseq = event->perform(seq);
-        delete event;
         sequences.push_back(nextseq);
+        events.push_back(new HEvent("e"+to_string(++event_count), event, nextseq));
+        delete event;
+        if (nextseq->length() == 0) break;
     }
     this->types = sequences.back()->retype_atoms(Model::instance()->length_threshold);
-    
-    /*for(auto s : sequences) cout << *s;
+    assert(SIZE(events) == SIZE(sequences));
+    For(i, SIZE(events)) 
+        events[i]->compute_atoms(i?events[i-1]:nullptr, i?sequences[i-1]:nullptr, sequences[i]);
+    for(int i = SIZE(events)-1; i>=0; --i)
+        events[i]->compute_atom_ids(sequences[i]);
+
+    for(auto s : sequences) cout << *s;
     cout << endl;
     for(auto s : sequences) s->write_atoms_short();
-    cout << endl;*/
+    cout << endl;
+    for(auto e : events) cout << *e;
+    cout << endl;
     sequences.back()->write_atoms_short();
-    cout << SIZE(sequences) << " " << sequences.back()->length() << endl;
+    cout << SIZE(sequences) << " " << sequences.back()->atom_count() << " " 
+         << sequences.back()->length() << endl;
 }
 
 void History::save_to_files(string basename, string id) {
@@ -63,19 +83,20 @@ void History::write_stats(ostream& os) {
 }
 
 void History::write_final_sequence(ostream& os, const string& sep) {
-    mustbe(SIZE(sequences), "Missing sequences.");
+    assert(SIZE(sequences));
     sequences.back()->write_dna(os, sep);
 }
 
 void History::write_atoms(ostream& os) {
-    mustbe(SIZE(sequences), "Missing sequences.");
+    assert(SIZE(sequences));
     sequences.back()->write_atoms(os); 
 }
 
 void History::write_atoms_align(string basepath) {
-    mustbe(SIZE(sequences), "Missing sequences.");
+    assert(SIZE(sequences));
     map<int, fstream> files;
-    mkdir(basepath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    remove_directory(basepath, "aln");
+    create_directory(basepath);
     for(const auto& type : types) 
         files[type->id].open(basepath+to_string(type->id)+".aln", fstream::out);
     GAtom* atom = sequences.back()->first;
@@ -92,5 +113,5 @@ void History::write_atoms_align(string basepath) {
 }
 
 void History::write_events(ostream& os) {
-
+    for(auto e : events) os << *e;
 }

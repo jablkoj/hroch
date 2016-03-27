@@ -26,7 +26,7 @@ private:
 public:
     static Model* instance();
     
-    const int length_threshold = 20;
+    const int length_threshold = 40;
     bool is_random_del();
     bool is_random_inv();
     int get_random_len();

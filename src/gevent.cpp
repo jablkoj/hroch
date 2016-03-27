@@ -24,19 +24,27 @@ GEventDel::GEventDel(int from, int to, double time_interval) :
     this->from = from;
     this->to = to;
 }
-NoGEvent::NoGEvent(double time_interval) :
+GEventLeaf::GEventLeaf(double time_interval) :
     GEvent(time_interval) {
 }
+GEventRoot::GEventRoot() :
+    GEvent(0) {
+}
 
-Sequence* NoGEvent::perform(Sequence* sequence) {
+Sequence* GEventLeaf::perform(Sequence* sequence) {
     Sequence* s = new Sequence(sequence);
     s->mutate(time_interval);
     return s;    
 }
 
+Sequence* GEventRoot::perform(Sequence* sequence) {
+    return sequence;
+}
+
 Sequence* GEventDup::iperform(Sequence* sequence, bool invert) {
     sequence->split_breakpoints({from, to, cpos});
     Sequence* s = new Sequence(sequence);
+    s->mutate(time_interval);
     int pos = 0;
     GAtom *cpos_atom = nullptr, *cfront_atom = nullptr, *cback_atom = nullptr;
     GAtom *n_atom = s->first, *p_atom = nullptr;
@@ -67,7 +75,6 @@ Sequence* GEventDup::iperform(Sequence* sequence, bool invert) {
         b->next = a;
         swap(cfront_atom, cback_atom);
     }
-
     if (cpos_atom == nullptr) {
        cback_atom->next = s->first; 
        s->first = cfront_atom;
@@ -75,7 +82,6 @@ Sequence* GEventDup::iperform(Sequence* sequence, bool invert) {
         cback_atom->next = cpos_atom->next;
         cpos_atom->next = cfront_atom;
     }
-    s->mutate(time_interval);
     return s;
 }
 
@@ -89,6 +95,7 @@ Sequence* GEventDupi::perform(Sequence* sequence) {
 Sequence* GEventDel::perform(Sequence* sequence) {
     sequence->split_breakpoints({from, to});
     Sequence* s = new Sequence(sequence);
+    s->mutate(time_interval);
     int pos = 0;
     GAtom* n_atom = s->first;
     GAtom* p_atom = nullptr;
@@ -106,7 +113,6 @@ Sequence* GEventDel::perform(Sequence* sequence) {
             n_atom = n_atom->next;
         }
     }
-    s->mutate(time_interval);
     return s;
 }
 

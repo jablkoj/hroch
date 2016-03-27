@@ -13,6 +13,7 @@ public:
     Sequence(Sequence* parent);
     ~Sequence();
     int length();
+    int atom_count();
     void mutate(double time);
     void split_breakpoints(vector<int> positions);
 
