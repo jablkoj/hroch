@@ -31,6 +31,7 @@ class Sequence;
 class HAtom;
 class HEvent;
 class History;
+class GHistory;
 
 #include"random.h"
 #include"gatom.h"
@@ -39,6 +40,7 @@ class History;
 #include"hevent.h"
 #include"sequence.h"
 #include"history.h"
+#include"ghistory.h"
 
 typedef pair<int, int> pii;
 typedef pair<pii, int> piii;

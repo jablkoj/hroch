@@ -4,7 +4,7 @@ ostream& operator<<(ostream& os, const HEvent& event) {
     os << event.species << " " << event.name << " " << (event.parent?event.parent->name:"root") 
        << " " << event.event_time << " " << event.type << " ";
 
-    for(auto a : event.atom_types) os <<  a << " ";
+    for(auto a : event.atoms) os << a.type << " ";
     os << "#";
     for(auto a : event.atom_parents) os << " " << a;
     return os << endl; 
@@ -24,6 +24,21 @@ HEvent::HEvent(const string& name, GEvent* event, Sequence* after) :
     this->type = event->name();
 }
 
+HEvent::HEvent(History* history, istringstream& iss) : HEvent::HEvent() {
+    string parent_name, word;
+    iss >> species >> name >> parent_name >> event_time >> type;
+    parent = (parent_name=="root")?nullptr:history->events[parent_name];
+    while(iss >> word) {
+        if (word == "#") break;
+        atoms.push_back(HAtom(stoi(word)));
+    }
+    while(iss >> word)
+        atom_parents.push_back(stoi(word));
+    assert(SIZE(atoms) == SIZE(atom_parents));
+
+    if (type == "leaf") atoms = history->leaf_atoms;
+}
+
 void HEvent::compute_atoms(HEvent* parent, Sequence* before, Sequence* after) {
     this->parent = parent;
     map<GAtom*, int> position;
@@ -37,8 +52,7 @@ void HEvent::compute_atoms(HEvent* parent, Sequence* before, Sequence* after) {
         }
     }
     ForGAtom(atom, after) if (atom->get_id()) {
-        atoms.push_back(HAtom(atom->get_id(), atom->length()));
-        atom_types.push_back(atom->get_id());
+        atoms.push_back(HAtom(atom->get_id()));
         atom_parents.push_back(position[atom->parent]);
     }
 }
@@ -53,4 +67,10 @@ void HEvent::compute_atom_ids(Sequence* after) {
         pos++;
     }
     assert(pos == SIZE(atoms));
+}
+
+void HEvent::compute_atom_ids(HEvent* after) {
+    For(i, SIZE(after->atoms)) {
+        atoms[after->atom_parents[i]].add_ids(after->atoms[i].get_ids());
+    }
 }

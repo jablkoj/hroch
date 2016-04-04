@@ -21,9 +21,12 @@ void HAtom::clear_strid_mapping() {
     si_map.clear();
 }
 
-HAtom::HAtom(int type, int dna_length) {
+HAtom::HAtom(int type) {
     this->type = type;
-    this->dna_length = dna_length;
+}
+HAtom::HAtom(int type, int id) : 
+    HAtom::HAtom(type) {
+    this->add_id(id);
 }
 
 void HAtom::add_id(int id) {

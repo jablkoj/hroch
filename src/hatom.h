@@ -17,9 +17,15 @@ public:
     void add_ids(const vector<int>& what);
     vector<int>& get_ids();
     int type;
-    int dna_length;
+    int atype() { return abs(type); }
 
-    HAtom(int type, int dna_length);
+    HAtom(int type);
+    HAtom(int type, int id);
+
+    friend bool operator==(const HAtom& h1, const HAtom& h2) {
+        return h1.type == h2.type && h1.ids == h2.ids;
+    }
 };
+
 
 #endif

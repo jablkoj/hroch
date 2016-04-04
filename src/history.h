@@ -4,26 +4,25 @@
 #include"constants.h"
 
 class History {
-    vector<Sequence*> sequences;
-    set<GAtomType*> types;
-
+    string leaf_dna_sequence;
+    map<int, string> leaf_atom_dna;
+    History* original;
 public:
-    vector<HEvent*> events;
-    
+    vector<HAtom> leaf_atoms;
+    map<string, HEvent*> events;
+
     void clean();
-    void generate_random(double time, int sequence_length);
-    void save_to_files(string basename, string id = "");
-    void write_stats(ostream& os);
-    void write_final_sequence(ostream& os, const string& sep = "\n");
-    void write_atoms(ostream& os);
-    void write_atoms_align(string basepath);
+    void reconstruct();
+    
+    void read_final_sequence(istream& is);
+    void read_atoms(istream& is);
+    void read_atoms_align(string basepath);
+    void read_events(istream& is);
+    
     void write_events(ostream& os);
 
-    //void load_from_files(string basename, string id = "");
-
-    History() {
-
-    }
+    History(string basename, string id = "");
+    History(History* original);
 };
 
 #endif

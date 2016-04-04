@@ -1,117 +1,85 @@
 #include"history.h"
-#include"files.h"
+
+History::History(string basename, string id) {
+    if (SIZE(id)) basename += "-" + id;
+    ifstream f;
+    cout << "Loading " << basename << endl; 
+
+    f.open(basename+".dna", fstream::in);
+    read_final_sequence(f);
+    f.close();
+    f.open(basename+".atoms", fstream::in);
+    read_atoms(f);
+    f.close();
+    read_atoms_align(basename+"/"); 
+    f.open(basename+".nhistory", fstream::in);
+    read_events(f);
+    f.close();
+
+    cout << "       " << basename << " loaded" << endl; 
+}
+
+History::History(History* original) {
+    
+}
 
 void History::clean() {
-    if (SIZE(sequences)) {
-        this->types = sequences[0]->retype_atoms(0);
-        for(auto t : types) delete t;
-        types.clear();
-    }
-    for(auto s : sequences) delete s;
-    sequences.clear();
-    for(auto e : events) delete e;
+    for(auto e : events) delete e.second;
     events.clear();
-    GAtomType::reset_ids(); 
-    HAtom::clear_strid_mapping();
+    leaf_atoms.clear();
+    leaf_atom_dna.clear();
 }
 
-void History::generate_random(double time, int sequence_length) {
-    clean(); 
-    sequences.push_back(new Sequence(0.0, sequence_length));
-    int event_count = 0;
-    GEventRoot root;
-    events.push_back(new HEvent("e"+to_string(++event_count), &root, sequences.back()));
+void History::reconstruct() {
 
-    double current_time = 0.0;
-    while(current_time < time - epsilon) {
-        Sequence* seq = sequences.back();
-        GEvent* event = Model::instance()->get_random_event(seq->length());
-        while (event->get_length() == 0) {
-            delete event;
-            event = Model::instance()->get_random_event(seq->length());
-        }
-        if (event->get_time(current_time) > time) {
-            delete event;
-            event = new GEventLeaf(time-current_time); 
-        }
-        current_time = event->get_time(current_time); 
-        Sequence* nextseq = event->perform(seq);
-        sequences.push_back(nextseq);
-        events.push_back(new HEvent("e"+to_string(++event_count), event, nextseq));
-        delete event;
-        if (nextseq->length() == 0) break;
+}
+
+
+void History::read_final_sequence(istream& is) {
+    is >> leaf_dna_sequence;
+}
+
+void History::read_atoms(istream& is) {
+    string species, name;
+    int type, inverz, from, to;
+    while(is >> species >> name >> type >> inverz >> from >> to) {
+        type *= inverz;
+        leaf_atoms.push_back(HAtom(type, HAtom::str_to_id(name)));
     }
-    this->types = sequences.back()->retype_atoms(Model::instance()->length_threshold);
-    assert(SIZE(events) == SIZE(sequences));
-    For(i, SIZE(events)) 
-        events[i]->compute_atoms(i?events[i-1]:nullptr, i?sequences[i-1]:nullptr, sequences[i]);
-    for(int i = SIZE(events)-1; i>=0; --i)
-        events[i]->compute_atom_ids(sequences[i]);
-
-    for(auto s : sequences) cout << *s;
-    cout << endl;
-    for(auto s : sequences) s->write_atoms_short();
-    cout << endl;
-    for(auto e : events) cout << *e;
-    cout << endl;
-    sequences.back()->write_atoms_short();
-    cout << SIZE(sequences) << " " << sequences.back()->atom_count() << " " 
-         << sequences.back()->length() << endl;
 }
 
-void History::save_to_files(string basename, string id) {
-    if (SIZE(id)) basename += "-" + id;
-    ofstream f;
-    cout << "Saving " << basename << endl; 
-
-    f.open(basename+".dna", fstream::out);
-    write_final_sequence(f);
-    f.close();
-    f.open(basename+".atoms", fstream::out);
-    write_atoms(f);
-    f.close();
-    write_atoms_align(basename+"/"); 
-    f.open(basename+".nhistory", fstream::out);
-    write_events(f);
-    f.close();
-
-    cout << "       " << basename << " saved" << endl; 
-}
-
-void History::write_stats(ostream& os) {
-    os << "Number of events: " << SIZE(events) << endl;
-}
-
-void History::write_final_sequence(ostream& os, const string& sep) {
-    assert(SIZE(sequences));
-    sequences.back()->write_dna(os, sep);
-}
-
-void History::write_atoms(ostream& os) {
-    assert(SIZE(sequences));
-    sequences.back()->write_atoms(os); 
-}
-
-void History::write_atoms_align(string basepath) {
-    assert(SIZE(sequences));
+void History::read_atoms_align(string basepath) {
     map<int, fstream> files;
-    remove_directory(basepath, "aln");
-    create_directory(basepath);
-    for(const auto& type : types) 
-        files[type->id].open(basepath+to_string(type->id)+".aln", fstream::out);
-    GAtom* atom = sequences.back()->first;
-    while(atom != nullptr) {
-        int id = atom->get_type()->id;
-        if (id) {
-            mustbe(files.count(id), "Not found type for atom");
-            files[id] << ">" << atom->get_name() << endl
-                      << atom->get_dna() << endl;
+    for(HAtom atom : leaf_atoms) if (files.count(atom.atype()) == 0)
+        files[atom.atype()].open(basepath+to_string(atom.atype())+".aln", fstream::in);
+    for(auto& f : files) {
+        string word, buffer, name;
+        while(f.second >> word) {
+            if (word[0] == '>') {
+                if (SIZE(name)) leaf_atom_dna[HAtom::str_to_id(name)] = buffer;
+                buffer.clear();
+                name = word.substr(1);
+            } else buffer += word;
         }
-        atom = atom->next;
+        if (SIZE(name)) leaf_atom_dna[HAtom::str_to_id(name)] = buffer;
+        f.second.close();
     }
-    for(auto& f : files) f.second.close();
+}
+
+void History::read_events(istream& is) {
+    string line;
+    HEvent* e;
+    while(getline(is, line)){
+        istringstream iss(line);
+        e = new HEvent(this, iss);
+        events[e->name] = e;
+    }
+    while(e->parent != nullptr) {
+        e->parent->compute_atom_ids(e);
+        e = e->parent;
+    }
 }
 
 void History::write_events(ostream& os) {
-    for(auto e : events) os << *e;
+    for(auto e : events) os << *(e.second);
 }
