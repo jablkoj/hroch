@@ -43,6 +43,6 @@ void HAtom::add_ids(const vector<int>& what) {
     ids.resize(distance(ids.begin(), it));
 }
 
-vector<int>& HAtom::get_ids() {
+vector<int> HAtom::get_ids() const {
     return ids;
 }

@@ -12,6 +12,7 @@ class Model {
 private:
     geometric_distribution<int> length_distribution;
     geometric_distribution<int> distance_distribution;
+    exponential_distribution<double> time_distribution;
 
     const double prob_del = 0.05;
     const double prob_inv = 0.3902;

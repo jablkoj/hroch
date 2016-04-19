@@ -1,5 +1,23 @@
 #include"hevent.h"
 
+Candidate::Candidate(int b1, int e1, int b2, int e2) {
+    this->b1 = b1;
+    this->e1 = e1;
+    this->b2 = b2;
+    this->e2 = e2;
+}
+
+Candidate::Candidate(int b1, int e1, int b2, int e2, const vector<int>& directions) :
+    Candidate::Candidate(b1,e1,b2,e2) {
+    this->directions = directions;
+}
+
+ostream& operator<<(ostream& os, const Candidate& c) {
+    return os << "(" << c.b1 << " " << c.e1 << " -> " 
+       << c.b2 << " " << c.e2 << " " << c.directions << ")";
+}
+
+
 ostream& operator<<(ostream& os, const HEvent& event) {
     os << event.species << " " << event.name << " " << (event.parent?event.parent->name:"root") 
        << " " << event.event_time << " " << event.type << " ";
@@ -15,6 +33,13 @@ HEvent::HEvent() {
     parent = nullptr;
 }
 
+HEvent::HEvent(string species, string name, string type) :
+    HEvent::HEvent() {
+    this->species = species;
+    this->name = name;
+    this->type = type;
+}
+
 HEvent::HEvent(const string& name, GEvent* event, Sequence* after) :
     HEvent::HEvent() {
     this->species = after->name;
@@ -22,6 +47,13 @@ HEvent::HEvent(const string& name, GEvent* event, Sequence* after) :
     this->edge_time = event->get_time();
     this->event_time = after->age;
     this->type = event->name();
+}
+
+HEvent::HEvent(string species, string name, string type, HEvent* same_child) :
+    HEvent::HEvent(species, name, type) {
+    this->atoms = same_child->atoms;
+    same_child->parent = this;
+    For(i, SIZE(same_child->atoms)) same_child->atom_parents.push_back(i);        
 }
 
 HEvent::HEvent(History* history, istringstream& iss) : HEvent::HEvent() {
@@ -36,7 +68,19 @@ HEvent::HEvent(History* history, istringstream& iss) : HEvent::HEvent() {
         atom_parents.push_back(stoi(word));
     assert(SIZE(atoms) == SIZE(atom_parents));
 
-    if (type == "leaf") atoms = history->leaf_atoms;
+    if (type == "leaf") atoms = history->leaf_atoms[species];
+}
+
+bool HEvent::is_final() {
+    set<int> types;
+    for(auto& a : atoms) {
+        if (types.count(a.atype())) return false;
+        types.insert(a.atype());
+    }
+    type = "root";
+    atom_parents.resize(SIZE(atoms));
+    For(i, SIZE(atoms)) atom_parents[i] = -1;
+    return true;
 }
 
 void HEvent::compute_atoms(HEvent* parent, Sequence* before, Sequence* after) {
@@ -73,4 +117,45 @@ void HEvent::compute_atom_ids(HEvent* after) {
     For(i, SIZE(after->atoms)) {
         atoms[after->atom_parents[i]].add_ids(after->atoms[i].get_ids());
     }
+}
+
+int HEvent::compute_is_left() {
+    if (type!="dup" && type!="dupi") return -1;
+    map<int, int> M;
+    for(auto p : atom_parents) M[p]++;
+    For(i, SIZE(atom_parents)) if (M[atom_parents[i]] > 1) {
+        return (atom_parents[i]==i); 
+    }
+    return -1;
+}
+
+
+void HEvent::compute_diff(const vector<HAtom>& diff) {
+    assert(SIZE(diff)==0);
+    map<int, int> M;
+    for(auto p : atom_parents) M[p]++;
+    diff_atoms.clear();
+    For(i, SIZE(atoms)) if (M[atom_parents[i]] > 1) 
+        diff_atoms.push_back(atoms[i]);
+    sort(diff_atoms.begin(), diff_atoms.end()); 
+}
+
+void HEvent::test_stats(History* h, ostream& os) {
+    map<int, vector<HAtom>> M;
+    For(i, SIZE(atoms)) M[atom_parents[i]].push_back(atoms[i]);
+    os << "cheries ";
+    for(auto p : M) {
+        if (SIZE(p.second) == 2) {
+            os << p.second[0].type << "("
+                 << h->cherryness(p.second[0],p.second[1]) << ") ";
+        }
+    }
+    os << endl;
+}
+
+void HEvent::write_detailed(ostream& os) {
+    for(const HAtom& atom : atoms) {
+        os << atom.type << atom.get_ids() << " ";
+    }
+    os << endl;
 }

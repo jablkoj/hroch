@@ -63,9 +63,12 @@ void GHistory::save_to_files(string basename, string id) {
     ofstream f;
     cout << "Saving " << basename << endl; 
 
-    f.open(basename+".dna", fstream::out);
-    write_final_sequence(f);
-    f.close();
+    for(string species : {"unicorn"}) {
+        f.open(basename+"-"+species+".dna", fstream::out);
+        f << ">" << species << endl;
+        write_final_sequence(f);
+        f.close();
+    }
     f.open(basename+".atoms", fstream::out);
     write_atoms(f);
     f.close();

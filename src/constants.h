@@ -28,19 +28,13 @@ class GAtom;
 class GAtomType;
 class GEvent;
 class Sequence;
+class Candidate;
+class Dynamics;
 class HAtom;
 class HEvent;
 class History;
 class GHistory;
-
-#include"random.h"
-#include"gatom.h"
-#include"gevent.h"
-#include"hatom.h"
-#include"hevent.h"
-#include"sequence.h"
-#include"history.h"
-#include"ghistory.h"
+class CherryForest;
 
 typedef pair<int, int> pii;
 typedef pair<pii, int> piii;
@@ -53,8 +47,18 @@ typedef vector<vi> vvi;
 typedef vector<vvi> vvvi;
 typedef vector<double> vdo;
 typedef vector<vdo> vvdo;
-//typedef pair<string, int> atom_element;
 typedef vector<trint> vtri;
+
+#include"random.h"
+#include"gatom.h"
+#include"gevent.h"
+#include"hatom.h"
+#include"hevent.h"
+#include"cherry.h"
+#include"sequence.h"
+#include"history.h"
+#include"ghistory.h"
+#include"dynamics.h"
 
 struct trint {
     int a,b,c;
@@ -89,6 +93,7 @@ int sign(T val) {
 }
 
 extern int debuging;
+extern int do_cheeryness;
 extern char bases[BASES];
 extern int base_id[256];
 extern char base_inv[256];
@@ -101,5 +106,6 @@ inline void mustbe(const bool& True, const string& message="") {
 }
 
 void setup_constants();
+set<string> parse_arguments(int argc, char **argv);
 
 #endif

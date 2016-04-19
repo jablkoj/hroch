@@ -7,6 +7,7 @@ uniform_real_distribution<double> ur_distribution;
 
 void random_init(){
     srand(time(NULL)+getpid());
+    srand(47);
     generator = default_random_engine(rand());
     ur_distribution = uniform_real_distribution<double>();
 }
@@ -26,6 +27,7 @@ Model* Model::_instance = nullptr;
 Model::Model() {
     length_distribution = geometric_distribution<int>(1./mean_len);
     distance_distribution = geometric_distribution<int>(1./mean_dist);
+    time_distribution = exponential_distribution<double>(event_rate);
 }
 Model* Model::instance() {
     if (Model::_instance == nullptr) Model::_instance = new Model();
@@ -44,7 +46,7 @@ int Model::get_random_dist() {
     return distance_distribution(generator);
 }
 double Model::get_random_time() {
-    return 1./event_rate; //TODO spravit nahodne
+    return time_distribution(generator);
 }
 char Model::get_mutated_base(char base, double time) {
     return (random_double() < exp(-4.*mut_alpha*time))?base:bases[rand()%BASES];
