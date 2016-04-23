@@ -13,9 +13,9 @@ Dynamics::Dynamics(History* history, HEvent* event) {
     cherryness = vector<vvdo>(n+2, vvdo(n+2, vdo(8, 0.)));
     For(i, n) For(j, n) {
         if (i!=j && atoms[i]==atoms[j]) cherryness[i+1][j+1][BASE+LEV] = 
-            sqrt(history->cherryness(event->atoms[i],event->atoms[j]));
+            history->cherryness(event->atoms[i],event->atoms[j]);
         if (i!=j+1 && atoms[i]==-atoms[j]) cherryness[i+1][j+1][BASEI+LEV] = 
-            sqrt(history->cherryness(event->atoms[i],event->atoms[j]));
+            history->cherryness(event->atoms[i],event->atoms[j]);
         For(k,2) 
             cherryness[i+1][j+1][BASE+k+2] = cherryness[i+1][j+1][BASEI+k+2] = 1.;
     }
@@ -65,7 +65,10 @@ void Dynamics::compute_graph(double dupm, double delm, double deli) {
     sort(all_endpoints.begin(), all_endpoints.end());
     reverse(all_endpoints.begin(), all_endpoints.end());
     sum_endpoints = 0.;
-    for(auto ep : all_endpoints) sum_endpoints += ep.first; 
+    for(auto ep : all_endpoints) sum_endpoints += ep.first;
+    /*csum_ep = vector<double>(SIZE(all_endpoints)+1,0.);
+    For(i, SIZE(all_endpoints))
+        csum_ep[i+1] = csum_ep[i]+all_endpoints[i].first;*/
 }
 
 Candidate Dynamics::get_candidate(bool maximal) {
@@ -78,17 +81,23 @@ Candidate Dynamics::get_candidate(bool maximal) {
     };
 
     int pos = 0;
-    double r = random_double(0., sum_endpoints);
-    if (maximal) r = 0.;
-    for(pos = 0; r>all_endpoints[pos].first; pos++)
-        r-=all_endpoints[pos].first;
+    if (!maximal && sum_endpoints > 0) {
+       double r = random_double(0., sum_endpoints);
+       // its faster this way
+       for(pos = 0; r>all_endpoints[pos].first; pos++)
+           r-=all_endpoints[pos].first;
+       //pos = upper_bound(csum_ep.begin(), csum_ep.end(), r) - csum_ep.begin() - 1;
+    } else {
+        pos = 0;
+    }
+    
     trint xyz = all_endpoints[pos].second;
     int x = xyz.a, y = xyz.b, z = xyz.c;
     int end1 = x, end2 = y;
     vector<int> directions;
     
     while(z%4>0) {
-        assert(mass[x][y][z] > epsilon);
+        if (mass[x][y][z] < epsilon) return Candidate(-1,0,-1,0);
         double r = random_double(0., mass[x][y][z]);
         if (maximal) {
             double max_val = -1;
@@ -181,7 +190,8 @@ void compute_A0A1P1(const Candidate& C, const vector<HAtom>& atoms,
 
     // merge1
     if (C.is1_left()) A0.insert(A0.end(), merged[0].begin(), merged[0].end());
-    For(i, SIZE(merged[0])) P1.push_back(ooam+i);
+    if (C.is1_left() || !C.is_inv()) For(i, SIZE(merged[0])) P1.push_back(ooam+i);
+    else For(i, SIZE(merged[0])) P1.push_back(ooam+SIZE(merged[0])-1-i);
     A1.insert(A1.end(), merged[x1].begin(), merged[x1].end());
     
     For(i, oc-ob) P1.push_back(SIZE(A0)+i);
@@ -190,7 +200,8 @@ void compute_A0A1P1(const Candidate& C, const vector<HAtom>& atoms,
     
     // merge2
     if (C.is1_right()) A0.insert(A0.end(), merged[0].begin(), merged[0].end());
-    For(i, SIZE(merged[0])) P1.push_back(ooam+i);
+    if (C.is1_right() || !C.is_inv()) For(i, SIZE(merged[0])) P1.push_back(ooam+i);
+    else For(i, SIZE(merged[0])) P1.push_back(ooam+SIZE(merged[0])-1-i);
     A1.insert(A1.end(), merged[3-x1].begin(), merged[3-x1].end());
     
     // last part
@@ -227,6 +238,7 @@ void History::rec_compute_parent(const Candidate& C, HEvent* event) {
     
     HEvent* current = new HEvent(event->species, gen_event_name(), "");
     current->atoms = A0;
+    //current->write_detailed(cout);
     for(auto d : deletions) { 
         //cout << A << " " << d.first << " " << d.second << " (" << A[d.first] << ")" << endl;
         current = compute_next_AP(d, event->species, gen_event_name(), 
@@ -258,6 +270,31 @@ HEvent* History::rec_see_event(const Candidate& C, HEvent* event) {
     e->atoms = A;
     e->atom_parents = P;
     return e;
+}
+
+void History::rec_setup_scoring_data(const Candidate& C, HEvent* event, ScoringData* sd) {
+    vector<HAtom> A0, A;
+    vector<int> P;
+    compute_A0A1P1(C, event->atoms, A0,A,P, sd->deletions);
+    sd->first_event = new HEvent(event->species, "test", "");
+    sd->first_event->atoms = A0;
+    /*sd->second_event = new HEvent(event->species, "test", "dup");
+    if (C.is_inv()) sd->second_event->type += "i";
+    sd->second_event->atoms = A;
+    sd->second_event->atom_parents = P;*/
+    sd->last_event = event; 
+    
+    int dir[3] = {0,1,C.is_inv()?-1:1};
+    int p[3] = {0, C.b1, C.b2};
+    for(auto d : C.directions) {
+        if (d) {
+            p[d] += dir[d];
+        } else {
+            p[1] += dir[1];
+            p[2] += dir[2];
+            sd->atom_friends.push_back({event->atoms[p[1]], event->atoms[p[2]]});
+        }
+    }    
 }
 
 void History::rec_merge_candidate(const Candidate& C, HEvent* event) {

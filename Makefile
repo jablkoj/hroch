@@ -14,7 +14,7 @@ OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 # compiler and flags
 
 CXX=g++
-CXXFLAGS=-std=gnu++11 -O2
+CXXFLAGS=-std=gnu++11 -O2 -static
 RM=rm
 WFLAGS=-Wall -Wextra -Wno-unused-result
 #-g -pg -static
@@ -32,7 +32,7 @@ $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp $(INCLUDES)
 	@echo "Compiled "$<" successfully."
 
 server: all
-	scp $(BINDIR)/$(TARGET) compbio.fmph.uniba.sk:Bakalarka/
+	scp -r Makefile src bio:dups/
 
 clean:
 	$(RM) $(OBJECTS)

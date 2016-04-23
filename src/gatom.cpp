@@ -7,6 +7,14 @@ string invert_dna(const string& str, bool really = true) {
     return res;
 }
 
+// remove all '-'
+string compact_dna(const string& str, bool really = true) {
+    if (!really) return str;
+    string res = "";
+    for(auto c : str) if (c!='-') res.push_back(c);
+    return res;
+}
+
 int GAtomType::type_cnt = 0;
 
 void GAtomType::split(int position) {
@@ -44,8 +52,17 @@ void GAtom::hard_invert() {
 }
 
 void GAtom::mutate(double time) {
-    for(auto& c : dna) 
-        c = Model::instance()->get_mutated_base(c, time);
+    for(auto& c : dna)
+        if (c != '-')
+            c = Model::instance()->get_mutated_base(c, time);
+    For(i, SIZE(dna))
+        if (Model::instance()->get_indel_happened(time)) {
+            do {
+                dna[i] = '-';
+                i++;
+            } while(i < SIZE(dna) && rand()%2 == 0);
+        }
+    
 }
 void GAtom::split(int position, GAtom* first_parent, GAtom* second_parent) {
     if (inverted) {
@@ -94,8 +111,8 @@ GAtom::GAtom(GAtom* parent, const string &dna) {
     this->dna = dna;
 }
 
-void GAtom::write_dna(ostream& os, const string& sep) {
-    os << invert_dna(dna, inverted) << sep;
+void GAtom::write_dna(ostream& os, const string& sep, bool compact) {
+    os << invert_dna(compact_dna(dna, compact), inverted) << sep;
 }
 void GAtom::write_type(ostream& os, const string& sep) {
     os << get_id() << sep;

@@ -1,7 +1,13 @@
 #include"history.h"
 
+void History::init_zero() {
+    machine = nullptr;
+    cherry_mode = DEFAULT_CHERRY;
+    strategy = NO_STRATEGY;
+}
+
 History::History(string basename, string id) {
-    cherry_mode = CHERRY_TREE;
+    init_zero();
     if (SIZE(id)) basename += "-" + id;
     ifstream f;
     cout << "Loading " << basename << endl; 
@@ -32,14 +38,16 @@ string History::gen_event_name() {
 }
 
 History::History(History* original) {
-    cherry_mode = CHERRY_TREE;
+    init_zero();
     this->original = original;
     this->leaf_species = original->leaf_species;
     this->leaf_atoms = original->leaf_atoms;
+    this->type_dna_length = original->type_dna_length;
     for(auto la : leaf_atoms) {
         HEvent* e = new HEvent(la.first, gen_event_name(), "leaf");
         e->atoms = la.second;
         events[e->name] = e;
+        leaf_events[e->species] = e;
     }
     if (do_cheeryness)
         this->cherry_forest = new CherryForest(original->cherry_forest);
@@ -48,15 +56,13 @@ History::History(History* original) {
 History::~History() {
     for(auto e : events) delete e.second;
     events.clear();
+    leaf_events.clear();
     leaf_species.clear();
     leaf_atoms.clear();
     leaf_atom_dna.clear();
     if (cherry_forest != nullptr) delete cherry_forest;
 }
 
-void History::set_cherry_mode(int mode) {
-    cherry_mode = mode;
-}
 
 void History::read_final_sequence(string species, istream& is) {
     string word;
@@ -92,6 +98,9 @@ void History::read_atoms_align(const string& basepath) {
         if (SIZE(name)) leaf_atom_dna[HAtom::str_to_id(name)] = buffer;
         f.second.close();
     }
+    for(auto atoms : leaf_atoms) for(HAtom atom : atoms.second) { 
+        type_dna_length[atom.atype()] = SIZE(leaf_atom_dna[atom.get_ids()[0]]);
+    }
 }
 
 void History::read_events(istream& is) {
@@ -101,12 +110,28 @@ void History::read_events(istream& is) {
         istringstream iss(line);
         e = new HEvent(this, iss);
         events[e->name] = e;
+        if (e->type == "leaf") 
+            leaf_events[e->species] = e;
     }
     e->atoms = leaf_atoms[e->species];
     while(e->parent != nullptr) {
         e->parent->compute_atom_ids(e);
         e->compute_diff();
         e = e->parent;
+    }
+    // remove useless events
+    auto temp_events = events;
+    for(auto ev : temp_events) {
+        while ((!ev.second->is_useless()) && ev.second->parent != nullptr &&
+            ev.second->parent->is_useless()) {
+            ev.second->parent = ev.second->parent->parent;
+        }
+    }
+    for(auto ev : temp_events) {
+        if (ev.second->is_useless()) {
+            events.erase(ev.first);
+            delete ev.second;
+        }
     }
 }
 
@@ -130,14 +155,19 @@ void History::write_events(ostream& os) {
     for(auto e : just_events) os << *e;
 }
 
+void History::save(string name) {
+    ofstream file("outputs/"+name);
+    write_events(file);
+    file.close();
+}
+
 void History::write_stats(ostream& os) {
     assert(SIZE(leaf_species)==1);
     string species = leaf_species[0];
     os << species << " " << SIZE(leaf_atoms[species]) << " atoms ";
     os << SIZE(original->events) << " events; time: " << original->get_time();
     os << " (dc" << do_cheeryness << ")" << endl;
-    nth_from_end(2)->test_stats(this, os);
-    
+    original->nth_from_end(1)->test_stats(this, os);
 
     for(auto sp : stats) {
         os << sp.first << " " << sp.second << endl;
@@ -154,16 +184,17 @@ double History::get_time() {
 }
 
 int History::is_original(HEvent* event) {
+    assert(SIZE(event->atom_parents));
     event->compute_diff();
     for(auto ev : original->events) 
         if (*(ev.second) == *(event)) {
-            return (nth_from_end(2)==ev.second)?SAME_LAST:SAME_ANY;
+            return (original->nth_from_end(1)==ev.second)?SAME_LAST:SAME_ANY;
         }
     return DIFFERENT;
 }
 
-int History::is_correct() {
-    if (SIZE(events) != SIZE(original->events))
+int History::is_correct(bool weak) {
+    if (!weak && SIZE(events) != SIZE(original->events))
         return false;
     for(auto ev : events)
         if(!is_original(ev.second)) {
@@ -173,31 +204,90 @@ int History::is_correct() {
 }
 
 HEvent* History::nth_from_end(int n) {
-    auto it = events.end();
-    For(i, n) it--;
-    return it->second;
+    assert(SIZE(leaf_events)==1);
+    HEvent* last = leaf_events.begin()->second;
+    For(i, n) last = last->parent;
+    return last;
 }
 
-double History::cherryness(const HAtom& a, const HAtom& b) {
-    if (cherry_mode == KNOW_HOW) {
-        HEvent* event = original->nth_from_end(SIZE(events));
+HEvent* History::resolve_deletion(HEvent* deletion) {
+    assert(deletion->parent != nullptr);
+    vector<int> ptc;
+    set<int> delp;
+    for(int p : deletion->atom_parents) delp.insert(p);
+    HEvent* cdup = deletion->parent;
+    For(i, SIZE(cdup->atoms)) if (!delp.count(i)) ptc.push_back(i);
+    
+    while(cdup != nullptr) {
+        if (cdup->type == "dup" || cdup->type == "dupi") {
+            bool inside = false;
+            bool border = false;
+            map<int,int> P;
+            for(auto p : cdup->atom_parents) P[p]++;
+            for(auto p : ptc) if (P[p]==2) {
+                inside = true;
+                if (P[p-1]<2 || P[p+1]<2) border = true;
+            }
+            if (border) return nullptr;
+            if (inside) return cdup;
+        }
+        For(i, SIZE(ptc)) ptc[i] = cdup->atom_parents[ptc[i]];
+        if (cdup->type == "del") {
+            delp.clear();
+            for(int p : cdup->atom_parents) delp.insert(p);
+            For(i, SIZE(cdup->parent->atoms)) if (!delp.count(i)) ptc.push_back(i);
+        }
+        cdup = cdup->parent; 
+
+    }
+    return nullptr;
+}
+
+double History::cherryness(const HAtom& a, const HAtom& b, int mode) {
+    if (!mode) mode = cherry_mode; 
+    if (mode == KNOW_HOW) {
+        HEvent* event = original->nth_from_end(SIZE(events)-1);
+        if (event->type == "del") event = resolve_deletion(event);
+        if (event == nullptr) return 0.0;
         int x = -1, y = -2;
         For(i, SIZE(event->atoms)) {
             if (event->atoms[i]==a) x = i;
             if (event->atoms[i]==b) y = i;
         }
-        if ((event->atom_parents[x] == event->atom_parents[y])
-          &&((x > y) ^ event->compute_is_left())) {
-            cout << x << " " << y << " y\n";
-            return 80.1;
-        } else {
-            return 0;
-        }
+        return 4.*((event->atom_parents[x] == event->atom_parents[y])
+          &&((x > y) ^ event->compute_is_left()));
     }
-    if (cherry_mode == NO_CHERRY || cherry_forest == nullptr) return 1.0;
+    if (mode == NO_STRATEGY || cherry_forest == nullptr) return 1.0;
+    if (mode == CHERRY_LEN) {
+        double len = type_dna_length[a.atype()];
+        return pow(cherry_forest->cherryness(a,b),
+                   len/(len+1000));
+    }
     return cherry_forest->cherryness(a,b);
 }
 
 void History::merge(const HAtom& a, const HAtom& b) {
     cherry_forest->merge(a,b);
+}
+    
+void History::set_strategy(int strategy, Machine* machine) {
+    switch(strategy) {
+        case NO_STRATEGY:
+        case CHERRY_TREE:
+        case CHERRY_LEN:
+        case KNOW_HOW:
+            this->cherry_mode = strategy;
+            assert(machine == nullptr);
+            break;
+        case SCORE_CL:
+            this->cherry_mode = CHERRY_LEN;
+            break;
+        case SCORE_BAC_NC:
+            this->cherry_mode = NO_STRATEGY;
+            break;
+        default:
+            this->cherry_mode = DEFAULT_CHERRY;
+    }
+    this->strategy = strategy;
+    this->machine = machine;
 }

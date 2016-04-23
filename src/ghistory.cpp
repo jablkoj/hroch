@@ -76,12 +76,32 @@ void GHistory::save_to_files(string basename, string id) {
     f.open(basename+".nhistory", fstream::out);
     write_events(f);
     f.close();
+    f.open(basename+".stats", fstream::out);
+    write_stats(f);
+    f.close();
 
     cout << "       " << basename << " saved" << endl; 
 }
 
 void GHistory::write_stats(ostream& os) {
     os << "Number of events: " << SIZE(events) << endl;
+    int dashes = 0;
+    ForGAtom(atom, sequences.back()) {
+        if (atom->get_id() == 0) os << "(";
+        os << atom->length();
+        if (atom->get_id() == 0) os << ")";
+        os << " ";
+        dashes += atom->length() - atom->com_length();
+    }
+    os << endl;
+    ForGAtom(atom, sequences.back()) {
+        if (atom->get_id() == 0) os << "(";
+        os << atom->com_length();
+        if (atom->get_id() == 0) os << ")";
+        os << " ";
+    }
+    os << endl;
+    os << "length=" << sequences.back()->com_length() << " dels=" << dashes << endl;
 }
 
 void GHistory::write_final_sequence(ostream& os, const string& sep) {
@@ -101,15 +121,13 @@ void GHistory::write_atoms_align(string basepath) {
     create_directory(basepath);
     for(const auto& type : types) 
         files[type->id].open(basepath+to_string(type->id)+".aln", fstream::out);
-    GAtom* atom = sequences.back()->first;
-    while(atom != nullptr) {
+    ForGAtom(atom, sequences.back()) {
         int id = atom->get_type()->id;
         if (id) {
             mustbe(files.count(id), "Not found type for atom");
             files[id] << ">" << atom->get_name() << endl
                       << atom->get_dna() << endl;
         }
-        atom = atom->next;
     }
     for(auto& f : files) f.second.close();
 }

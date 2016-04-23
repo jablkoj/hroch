@@ -27,6 +27,11 @@ int Sequence::length() {
     ForGAtom(atom, this) len+=atom->length();
     return len;
 }
+int Sequence::com_length() {
+    int len = 0;
+    ForGAtom(atom, this) len+=atom->com_length();
+    return len;
+}
 int Sequence::atom_count() {
     int len = 0;
     ForGAtom(atom, this) len+=1;
@@ -70,7 +75,7 @@ set<GAtomType*> Sequence::retype_atoms(int length_threshold) {
 }
 
 void Sequence::write_dna(ostream& os, const string& sep) {
-    ForGAtom(atom, this) atom->write_dna(os, "");
+    ForGAtom(atom, this) atom->write_dna(os, "", true);
     os << sep;
 }
 
@@ -84,9 +89,9 @@ void Sequence::write_atoms(ostream& os) {
     ForGAtom(atom, this) {
         if (atom->get_id()) {
             os << name << " " << atom->get_name() << " " << abs(atom->get_id()) << " "
-               << sign(atom->get_id()) << " " << pos << " " << pos + atom->length() << endl;
+               << sign(atom->get_id()) << " " << pos << " " << pos + atom->com_length() << endl;
         }
-        pos += atom->length();
+        pos += atom->com_length();
     }
 }
 

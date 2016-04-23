@@ -20,6 +20,7 @@ public:
 class CherryForest {
     map<int, vector<CherryTree>> trees;
     map<int, int> sizes;
+    map<int, double> bias;
 public:
     double cherryness(const HAtom& a, const HAtom& b);
     void merge(const HAtom& a, const HAtom& b);

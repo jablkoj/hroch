@@ -1,9 +1,9 @@
 #include"history.h"
 
 void History::rec_parent(HEvent* event) {
-    cout << "rec parent:" << event->compute_is_left() << endl;
-    vector<Candidate> cs = rec_candidates(event);
-    assert(SIZE(cs)>0);
+    set<Candidate> cset = rec_candidates(event);
+    vector<Candidate> cs(cset.begin(), cset.end());
+    if (SIZE(cs) == 0) return;
     vector<double> sum_scores = {0};
     for(auto c : cs) {
         double score = rec_score(c, event);
@@ -17,77 +17,91 @@ void History::rec_parent(HEvent* event) {
     }
 }
 
-int History::rec_test(HEvent* event, vector<Dynamics>& ds) {
-    //cout << "testing " << *event << endl;
-    int cnt = 0;
-    set<Candidate> cs;
-    while(cnt < 2000) {
-        Candidate c = ds[cnt%SIZE(ds)].get_candidate();
-        if (!c.is_valid()) continue;
-        cs.insert(c);
-        if (SIZE(cs) > 4*SIZE(event->atoms)) break; 
-        cnt++;
-        HEvent* e = rec_see_event(c, event);
-        bool is_good = is_original(e);
-        delete e;
-        if (is_good) return 1;
-    }
-    return 0;
-}
-
-int History::rec_test2(HEvent* event, vector<Dynamics>& ds) {
-    //cout << "testing " << *event << endl;
-    int cnt = 0;
-    set<Candidate> cs;
-    while(cnt < 1000) {
-        Candidate c = ds[cnt%SIZE(ds)].get_candidate();
-        if (!c.is_valid()) continue;
-        cs.insert(c);
-        cnt++;
-        HEvent* e = rec_see_event(c, event);
-        bool is_good = is_original(e);
-        delete e;
-        if (is_good) return 100*SIZE(cs)/SIZE(event->atoms);
-    }
-    return 0;
-}
-
-vector<Candidate> History::rec_candidates(HEvent* event) {
-    vector<Candidate> res;
-    if (cherry_mode == KNOW_HOW) {
+set<Candidate> History::rec_candidates(HEvent* event) {
+    set<Candidate> res;
+    if (strategy == KNOW_HOW) {
         Dynamics d0 = Dynamics(this, event);
-        d0.compute_graph(2.,0.0,0.0);
-        Candidate c = d0.get_candidate();
-        if (c.is_valid()) res.push_back(c);
+        d0.compute_graph(3.,0.9,0.4);
+        Candidate c = d0.get_candidate(true);
+        if (c.is_valid()) res.insert(c);
         return res;
     }
-
-    Dynamics d0 = Dynamics(this, event);
-    d0.compute_graph(1.,0.7,0.1);
-    For(i, SIZE(event->atoms)) {
-        Candidate c = d0.get_candidate();
-        if (c.is_valid()) res.push_back(c);
+    if (strategy == NO_STRATEGY || strategy == CHERRY_TREE ||
+        strategy == CHERRY_LEN) {
+        Dynamics d = Dynamics(this, event);
+        d.compute_graph(2.0,0.6,0.05);
+        int cnt = 0;
+        while(true) {
+            Candidate c = d.get_candidate();
+            if (c.is_valid()) {
+                res.insert(c);
+                break;
+            }
+            assert(cnt++<1000);
+        }
+        return res;
     }
-    d0.compute_graph(1.3,0.7,0.1);
+    
+    Dynamics d = Dynamics(this, event);
+    d.compute_graph(1.2,0.6,0.05);
     For(i, SIZE(event->atoms)) {
-        Candidate c = d0.get_candidate();
-        if (c.is_valid()) res.push_back(c);
+        Candidate c = d.get_candidate();
+        if (c.is_valid()) res.insert(c);
     }
-    d0.compute_graph(1.6,0.7,0.1);
-    For(i, SIZE(event->atoms)) {
-        Candidate c = d0.get_candidate();
-        if (c.is_valid()) res.push_back(c);
-    }
-    d0.compute_graph(1.9,0.7,0.1);
-    For(i, SIZE(event->atoms)) {
-        Candidate c = d0.get_candidate();
-        if (c.is_valid()) res.push_back(c);
+    d.compute_graph(2.0,0.6,0.05);
+    For(i, SIZE(event->atoms) * 2) {
+        Candidate c = d.get_candidate();
+        if (c.is_valid()) res.insert(c);
     }
     return res;
 }
 
 double History::rec_score(const Candidate& c, HEvent* event) {
-    return 1.0;
+    if (machine == nullptr) return 1.0;
+    vdo values = all_scores(this, c, event);
+    if (strategy == KNOW_HOW) {
+        machine->train_data(values, 1);
+        return 1.0;
+    }
+    double res = machine->predict(values);
+    return res;
+}
+
+void History::proc_learn() {
+    HEvent* current = events.begin()->second;
+    double now_time = current->event_time;
+    current = new HEvent(current->species, gen_event_name(), "", current);
+    events[current->name] = current;
+    current->event_time = now_time -= 0.01;
+    
+    while(!current->is_final()) {
+        set<Candidate> cs = rec_candidates(current);
+        for(auto c : cs) {
+            vdo values = all_scores(this, c, current);
+            HEvent *e = rec_see_event(c,current);
+            machine->train_data(values, bool(is_original(e)));
+            delete e;            
+            stats["candidates"] += 1;
+        }
+        
+        int old_strategy = strategy;
+        int old_mode = cherry_mode;
+        strategy = KNOW_HOW;
+        cherry_mode = KNOW_HOW;
+        rec_parent(current);
+        strategy = old_strategy;
+        cherry_mode = old_mode;
+       
+        if (current->parent == nullptr) return;
+        bool correct = is_correct(true);
+        while(current->parent != nullptr) {
+            current = current->parent;
+            events[current->name] = current;
+            current->event_time = now_time -= 0.01;
+        }
+        if (!correct) return;        
+    }
+    stats["full"] = 1;
 }
 
 
@@ -109,7 +123,12 @@ void History::proc_reconstruct(int number) {
     while(number!=0 && !current->is_final()) {
         if (number>0) number--;
         rec_parent(current);
-        assert(current->parent != nullptr);
+        if (current->parent == nullptr) {
+            assert(strategy == KNOW_HOW);
+            return;
+        }
+        if (is_correct(true)) stats["max_events"] = SIZE(events)-1;
+        else if (number == EVAL_LAZY) return;
         while(current->parent != nullptr) {
             current = current->parent;
             events[current->name] = current;
@@ -118,56 +137,33 @@ void History::proc_reconstruct(int number) {
     }
 }
 
-void History::proc_test(string stypes) {
-    // only linear reconstruction implemented
+void History::proc_test_candi(int strategy, string mark) {
     assert(SIZE(leaf_species)==1);
-    assert(SIZE(events)==1);
-    HEvent* current = events.begin()->second;
-    cherry_mode = CHERRY_TREE;
-    if (stypes.back() == 'o') cherry_mode = NO_CHERRY;
-    if (stypes.back() == 'p') cherry_mode = KNOW_HOW;
-    
-    vector<Dynamics> dynam;
-    map<char, double> M = {
-        {'0', 1.}, 
-        {'1', 1.1}, 
-        {'2', 1.2}, 
-        {'3', 1.3}, 
-        {'4', 1.4}, 
-        {'5', 1.5}, 
-        {'6', 1.6},
-        {'7', 1.7},
-        {'8', 1.8},
-        {'9', 1.9}
-    };
-    for(char c : stypes) if (c<'@') {
-        dynam.push_back(Dynamics(this, current));
-        dynam.back().compute_graph(M[c], 0.7, 0.1);
-    }
+    HEvent* current = leaf_events.begin()->second;
+    set_strategy(strategy);
+
     int tot_cnt = 1000;
     int ok_cnt = 0;
     int oke_cnt = 0;
-    int bad_cnt = 0;
+    int size_sum = 0;
+
     For(i, tot_cnt) {
+        set<Candidate> cs = rec_candidates(current);
+        assert(SIZE(cs));
         int best = 0;
-        for(auto ds : dynam) {
-            int bad = 0;
-            Candidate c = ds.get_candidate();
-            while (!c.is_valid() && bad++ < 100)
-                c = ds.get_candidate();
-            if (!c.is_valid()) {
-                bad_cnt++;
-                break;
-            }
+        for(auto c : cs) {
             HEvent *e = rec_see_event(c,current);
             best = max(best, is_original(e));
+            delete e;
         }
         ok_cnt += bool(best);
-        oke_cnt += best==SAME_LAST;
+        oke_cnt += (best==SAME_LAST);
+        size_sum += SIZE(cs);
     }
-    stats["etest " + stypes] = double(oke_cnt)/tot_cnt;
-    stats["test " + stypes] = double(ok_cnt)/tot_cnt;
-    stats["bad_cnt"] += bad_cnt;
+    
+    stats["_size "+mark] = double(size_sum)/tot_cnt;
+    stats["etest "+mark] = double(oke_cnt)/tot_cnt;
+    stats["ctest "+mark] = double(ok_cnt)/tot_cnt;
 }
 
 

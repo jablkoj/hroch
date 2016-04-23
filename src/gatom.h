@@ -25,6 +25,7 @@ public:
     GAtom *parent, *next;
 
     int length() { return dna.size(); }
+    int com_length() { return dna.size() - count(dna.begin(), dna.end(), '-'); }
     GAtomType* get_type() { return type; }
     int get_id() { return inverted?-type->id:type->id; }
     const string& get_dna() { return dna; }
@@ -42,8 +43,7 @@ public:
     GAtom(int length = 0);
     GAtom(GAtom* parent, const string& dna);
 
-    
-    void write_dna(ostream& os = cout, const string& sep = " ");
+    void write_dna(ostream& os = cout, const string& sep = " ", bool compact = false);
     void write_type(ostream& os = cout, const string& sep = " ");
 };
 ostream& operator<<(ostream& os, GAtom& atom);

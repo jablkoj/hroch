@@ -51,6 +51,9 @@ double Model::get_random_time() {
 char Model::get_mutated_base(char base, double time) {
     return (random_double() < exp(-4.*mut_alpha*time))?base:bases[rand()%BASES];
 }
+bool Model::get_indel_happened(double time) {
+    return (random_double() > exp(-0.02*time));
+}
 
 GEvent* Model::get_random_event(int sequence_length) {
     double time_interval = this->get_random_time();

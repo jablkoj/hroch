@@ -27,13 +27,14 @@ private:
 public:
     static Model* instance();
     
-    const int length_threshold = 40;
+    const int length_threshold = 50;
     bool is_random_del();
     bool is_random_inv();
     int get_random_len();
     int get_random_dist();
     double get_random_time();
     char get_mutated_base(char base, double time);
+    bool get_indel_happened(double time);
 
     GEvent* get_random_event(int sequence_length);
 };

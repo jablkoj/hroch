@@ -3,16 +3,31 @@
 
 #include"constants.h"
 
+// event similarity
 #define DIFFERENT 0
 #define SAME_ANY 1
 #define SAME_LAST 2
 
-#define NO_CHERRY 0
+// scoring strategy
+#define NO_STRATEGY 0
 #define CHERRY_TREE 1
-#define KNOW_HOW 2
+#define CHERRY_LEN 2
+#define SCORE_CL 4
+#define SCORE_BAC_NC 5
+#define SCORE_BAC 6 
+#define SCORE_LR 7
+#define KNOW_HOW 8
+
+#define DEFAULT_CHERRY CHERRY_TREE
+
+// evaluation
+#define EVAL_INF -1
+#define EVAL_LAZY -2
 
 class History {
-    int cherry_mode;
+    int strategy, cherry_mode;
+    Machine* machine;
+    void init_zero();
     vector<string> leaf_species;
     map<string, string> leaf_dna_sequence;
     map<int, string> leaf_atom_dna;
@@ -21,24 +36,28 @@ public:
     History* original;
     map<string, double> stats;
     map<string, vector<HAtom>> leaf_atoms;
-    map<string, HEvent*> events;
+    map<string, HEvent*> events; // name is key
+    map<string, HEvent*> leaf_events; // species is key
+    map<int, int> type_dna_length;
 
-    void proc_reconstruct(int number = -1); // -1 means infinity
-    void proc_test(string stypes);
+    void set_strategy(int strategy, Machine* machine = nullptr);
+
+    void proc_learn();
+    void proc_reconstruct(int number = EVAL_INF);
+    void proc_test_candi(int strategy, string mark);
     void rec_parent(HEvent* event);
-    int rec_test(HEvent* event, vector<Dynamics>& ds);
-    int rec_test2(HEvent* event, vector<Dynamics>& ds);
     void rec_compute_parent(const Candidate& C, HEvent* event);
     HEvent* rec_see_event(const Candidate& C, HEvent* event);
+    void rec_setup_scoring_data(const Candidate& C, HEvent* event, ScoringData* sd);
     void rec_merge_candidate(const Candidate& C, HEvent* event);
-    vector<Candidate> rec_candidates(HEvent* event);
+    set<Candidate> rec_candidates(HEvent* event);
     double rec_score(const Candidate& c, HEvent* event);
-    void set_cherry_mode(int mode);
 
     HEvent* nth_from_end(int n);
+    HEvent* resolve_deletion(HEvent* deletion);
     int is_original(HEvent* event);
-    int is_correct();
-    double cherryness(const HAtom& a, const HAtom& b);
+    int is_correct(bool weak = false);
+    double cherryness(const HAtom& a, const HAtom& b, int mode = 0);
     void merge(const HAtom& a, const HAtom& b);
 
     void read_final_sequence(string species, istream& is);
@@ -48,6 +67,7 @@ public:
     void read_cherryness(const string& basepath);
     
     string gen_event_name();
+    void save(string name);
     void write_events(ostream& os);
     void write_stats(ostream& os);
     double get_time();

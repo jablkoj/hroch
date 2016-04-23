@@ -83,6 +83,14 @@ bool HEvent::is_final() {
     return true;
 }
 
+bool HEvent::is_useless() {
+    if (type == "dup" || type == "dupi" || type == "del") {
+       if (parent != nullptr && SIZE(atoms) == SIZE(parent->atoms))
+           return true;
+    }
+    return false;
+}
+
 void HEvent::compute_atoms(HEvent* parent, Sequence* before, Sequence* after) {
     this->parent = parent;
     map<GAtom*, int> position;
@@ -129,25 +137,27 @@ int HEvent::compute_is_left() {
     return -1;
 }
 
-
 void HEvent::compute_diff(const vector<HAtom>& diff) {
     assert(SIZE(diff)==0);
     map<int, int> M;
     for(auto p : atom_parents) M[p]++;
     diff_atoms.clear();
-    For(i, SIZE(atoms)) if (M[atom_parents[i]] > 1) 
+    For(i, SIZE(atom_parents)) if (M[atom_parents[i]] > 1) 
         diff_atoms.push_back(atoms[i]);
     sort(diff_atoms.begin(), diff_atoms.end()); 
 }
 
 void HEvent::test_stats(History* h, ostream& os) {
     map<int, vector<HAtom>> M;
-    For(i, SIZE(atoms)) M[atom_parents[i]].push_back(atoms[i]);
-    os << "cheries ";
+    For(i, SIZE(atom_parents)) M[atom_parents[i]].push_back(atoms[i]);
+    os << "cheries " << name << " ";
+    bool reverse = !compute_is_left();
     for(auto p : M) {
         if (SIZE(p.second) == 2) {
-            os << p.second[0].type << "("
-                 << h->cherryness(p.second[0],p.second[1]) << ") ";
+            if (reverse) swap(p.second[0],p.second[1]);
+            os << p.second[0].type << "(" 
+               << p.second[0].get_ids() << p.second[1].get_ids()
+               << h->cherryness(p.second[0],p.second[1]) << ")  ";
         }
     }
     os << endl;

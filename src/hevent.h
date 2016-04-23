@@ -1,7 +1,9 @@
 #ifndef HEVENT_H
 #define HEVENT_H
 
-#include"constants.h"
+#include<algorithm>
+#include<vector>
+using namespace std;
 
 class Candidate {
 public:
@@ -30,6 +32,8 @@ public:
     }
 };
 
+#include"constants.h"
+
 ostream& operator<<(ostream& os, const Candidate& c);
 
 class HEvent {
@@ -50,6 +54,7 @@ public:
     HEvent(const string& name, GEvent* event, Sequence* after);
 
     bool is_final();
+    bool is_useless();
 
     // call when you know the atoms
     void compute_atoms(HEvent* parent, Sequence* before, Sequence* after);

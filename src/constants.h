@@ -18,6 +18,7 @@ using namespace std;
 #define For(i,n) for(int i=0; i<int(n); ++i)
 #define ForGAtom(atom, sequence) for(GAtom* atom = (sequence)->first; atom != nullptr; atom = atom->next)
 #define SIZE(i) int(i.size())
+#define UNUSED(x) (void)(x)
 #define BASES 4
 #define DATAPATH "data/"
 #define epsilon 1e-10
@@ -35,6 +36,8 @@ class HEvent;
 class History;
 class GHistory;
 class CherryForest;
+class Machine;
+class ScoringData;
 
 typedef pair<int, int> pii;
 typedef pair<pii, int> piii;
@@ -59,6 +62,8 @@ typedef vector<trint> vtri;
 #include"history.h"
 #include"ghistory.h"
 #include"dynamics.h"
+#include"score.h"
+#include"machine.h"
 
 struct trint {
     int a,b,c;
@@ -93,6 +98,7 @@ int sign(T val) {
 }
 
 extern int debuging;
+extern int stats;
 extern int do_cheeryness;
 extern char bases[BASES];
 extern int base_id[256];
