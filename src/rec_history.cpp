@@ -4,11 +4,17 @@ void History::rec_parent(HEvent* event) {
     set<Candidate> cset = rec_candidates(event);
     vector<Candidate> cs(cset.begin(), cset.end());
     if (SIZE(cs) == 0) return;
+    double sum_gscores = 0.0;
     vector<double> sum_scores = {0};
     for(auto c : cs) {
         double score = rec_score(c, event);
+        HEvent *e = rec_see_event(c,event);
+        if(is_original(e)) sum_gscores += score;
+        delete e;
         sum_scores.push_back(sum_scores.back() + score);
     }
+    //cout << "n=" << SIZE(cs) << "  g=" << sum_gscores << "  all="
+    //     << sum_scores.back() << endl;
     double pick = random_double(0, sum_scores.back());
     For(i, SIZE(cs)) if (pick < sum_scores[i+1]) {
         rec_compute_parent(cs[i], event);
@@ -26,8 +32,8 @@ set<Candidate> History::rec_candidates(HEvent* event) {
         if (c.is_valid()) res.insert(c);
         return res;
     }
-    if (strategy == NO_STRATEGY || strategy == CHERRY_TREE ||
-        strategy == CHERRY_LEN) {
+    if (strategy == NO_STRATEGY || strategy == CHERRY_NO ||
+        strategy == CHERRY_TREE || strategy == CHERRY_LEN) {
         Dynamics d = Dynamics(this, event);
         d.compute_graph(2.0,0.6,0.05);
         int cnt = 0;
@@ -43,13 +49,13 @@ set<Candidate> History::rec_candidates(HEvent* event) {
     }
     
     Dynamics d = Dynamics(this, event);
-    d.compute_graph(1.2,0.6,0.05);
+    d.compute_graph(1.2,0.5,0.04);
     For(i, SIZE(event->atoms)) {
         Candidate c = d.get_candidate();
         if (c.is_valid()) res.insert(c);
     }
-    d.compute_graph(2.0,0.6,0.05);
-    For(i, SIZE(event->atoms) * 2) {
+    d.compute_graph(2.0,0.5,0.04);
+    For(i, (SIZE(event->atoms) * 3)) {
         Candidate c = d.get_candidate();
         if (c.is_valid()) res.insert(c);
     }
@@ -76,13 +82,23 @@ void History::proc_learn() {
     
     while(!current->is_final()) {
         set<Candidate> cs = rec_candidates(current);
+        vector<vdo> good_values;
+        vector<vdo> bad_values;
         for(auto c : cs) {
             vdo values = all_scores(this, c, current);
             HEvent *e = rec_see_event(c,current);
-            machine->train_data(values, bool(is_original(e)));
+            if (is_original(e)) 
+                good_values.push_back(values);
+            else
+                bad_values.push_back(values);
             delete e;            
             stats["candidates"] += 1;
         }
+        For(i, min(SIZE(good_values), SIZE(bad_values))) 
+            machine->train_data(good_values[i],1);
+        For(i, min(SIZE(good_values), SIZE(bad_values)))
+            machine->train_data(bad_values[i],0);
+        
         
         int old_strategy = strategy;
         int old_mode = cherry_mode;
@@ -101,7 +117,7 @@ void History::proc_learn() {
         }
         if (!correct) return;        
     }
-    stats["full"] = 1;
+    if (is_correct()) stats["full"] = 1;
 }
 
 

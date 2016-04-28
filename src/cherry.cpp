@@ -102,7 +102,7 @@ void CherryForest::read_atom(History* history, int type, string filename) {
         ids[first] = HAtom::str_to_id(second);
     }
     //tree tree_1 [p = 0.780, P = 0.780] = [&W 0.780293] ((4,2),3,1);
-    double probability = 0.0, best_probability = 0.0;
+    double probability = 0.0, best_probability = 0.0, cnt = 0.;
     while(file >> word) {
         if (word == "end;") break;
         assert(word == "tree");
@@ -112,6 +112,7 @@ void CherryForest::read_atom(History* history, int type, string filename) {
         //cout << probability << " " << word << endl;
         trees[type].push_back(CherryTree(probability, type, ids, word));
         best_probability = max(best_probability, probability);
+        cnt++;
     }
     bias[type] = pow(1.-pow(best_probability,0.5),2.0);
     file.close();

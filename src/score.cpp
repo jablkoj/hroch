@@ -52,7 +52,7 @@ double sc_ev_prev_sp(ScoringData* sd) {
     return SIZE(sd->prev_sp);
 }
 double sc_ev_post_sp(ScoringData* sd) {
-    return SIZE(sd->prev_sp);
+    return SIZE(sd->post_sp);
 }
 double sc_ev_prev_bp(ScoringData* sd) {
     return SIZE(sd->prev_bp);

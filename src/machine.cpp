@@ -23,7 +23,8 @@ void MachineLinear::save() {
 }
 void MachineLinear::load() {
     ifstream file("regres/lr-model", fstream::in);
-    int n, x;
+    int n;
+    double x;
     file >> n;
     For(i, n) {
         file >> x;
@@ -36,5 +37,5 @@ double MachineLinear::predict(const vector<double>& values) {
     assert(SIZE(values) == SIZE(coef));
     double res = intercept;
     For(i, SIZE(values)) res += values[i]*coef[i];
-    return 1./(1.+exp(-res)); 
+    return pow(1./(1.+exp(-res)),4); 
 }

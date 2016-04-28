@@ -42,11 +42,12 @@ void test_candi() {
     ofstream file("stats/last-stats");
     string prefix = "T4";
 
-    for(int hid = 10; hid<20; ++hid) {
+    for(int hid = 10; hid<60; ++hid) {
         History* h0 = new History(DATAPATH "generated", prefix+to_string(hid));
         History* h1 = new History(h0);
         h1->stats["_name"] = hid;
         
+        h1->proc_test_candi(CHERRY_NO,"1nc");
         h1->proc_test_candi(CHERRY_TREE,"1ct");
         h1->proc_test_candi(CHERRY_LEN,"1cl");
         h1->proc_test_candi(SCORE_BAC_NC,"nc");
@@ -95,10 +96,7 @@ void train_history(Machine* machine, string name) {
 void train() {
     full = 0;
     Machine* machine = new MachineLinear();
-//    for(int i = 10000; i < 11000; ++i) train_history(machine,"L2"+to_string(i));
-//    for(int i = 10000; i < 11000; ++i) train_history(machine,"L3"+to_string(i));
     for(int i = 10000; i < 11000; ++i) train_history(machine,"L4"+to_string(i));
-//    for(int i = 10000; i < 11000; ++i) train_history(machine,"L5"+to_string(i));
     machine->save();
     delete machine;
     cout << "training finished" << endl;
@@ -117,7 +115,7 @@ void reconstruct_one(History* h0, string hid, int strategy) {
     if (strategy == SCORE_LR) machine = new MachineLinear();
     if (machine != nullptr) machine->load();
 
-    int attempts = 100;
+    int attempts = 1000;
     int max_events = 0;
     double avg_num_events = 0.0;
     vector<int> dist_num_events(1000,0);
@@ -167,6 +165,7 @@ void reconstruct_many(string hid) {
         return;
     }
     delete hsp;
+    reconstruct_one(h0, hid, CHERRY_NO);
     reconstruct_one(h0, hid, CHERRY_TREE);
     reconstruct_one(h0, hid, CHERRY_LEN);
     reconstruct_one(h0, hid, SCORE_BAC);
@@ -182,7 +181,7 @@ int main(int argc, char **argv) {
     if (args.count("train")) train();
     if (args.count("test")) test_candi();
     if (args.count("rec")) {
-        for(int i = 10; i<20; ++i)
-            reconstruct_many("T3"+to_string(i));
+        for(int i = 10; i<60; ++i)
+            reconstruct_many("T2"+to_string(i));
     }
 }

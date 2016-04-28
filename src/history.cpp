@@ -273,6 +273,7 @@ void History::merge(const HAtom& a, const HAtom& b) {
 void History::set_strategy(int strategy, Machine* machine) {
     switch(strategy) {
         case NO_STRATEGY:
+        case CHERRY_NO:
         case CHERRY_TREE:
         case CHERRY_LEN:
         case KNOW_HOW:

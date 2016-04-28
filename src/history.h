@@ -10,8 +10,9 @@
 
 // scoring strategy
 #define NO_STRATEGY 0
-#define CHERRY_TREE 1
-#define CHERRY_LEN 2
+#define CHERRY_NO 1
+#define CHERRY_TREE 2
+#define CHERRY_LEN 3
 #define SCORE_CL 4
 #define SCORE_BAC_NC 5
 #define SCORE_BAC 6 
