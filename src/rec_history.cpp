@@ -74,9 +74,9 @@ double History::rec_score(const Candidate& c, HEvent* event) {
 }
 
 void History::proc_learn() {
-    HEvent* current = events.begin()->second;
+    hevent* current = events.begin()->second;
     double now_time = current->event_time;
-    current = new HEvent(current->species, gen_event_name(), "", current);
+    current = new hevent(current->species, gen_event_name(), "", current);
     events[current->name] = current;
     current->event_time = now_time -= 0.01;
     
@@ -145,6 +145,27 @@ void History::proc_reconstruct(int number) {
         }
         if (is_correct(true)) stats["max_events"] = SIZE(events)-1;
         else if (number == EVAL_LAZY) return;
+        while(current->parent != nullptr) {
+            current = current->parent;
+            events[current->name] = current;
+            current->event_time = now_time -= 0.01;
+        }
+    }
+}
+
+void History::real_reconstruct() {
+    hevent* current = events.begin()->second;
+    double now_time = current->event_time;
+    current = new hevent(current->species, gen_event_name(), "", current);
+    events[current->name] = current;
+    current->event_time = now_time -= 0.01;
+    
+    while(!current->is_final()) {
+        rec_parent(current);
+        if (current->parent == nullptr) {
+            cout << "Unsuccessfull reconstruction" << endl;
+            exit(1);
+        }
         while(current->parent != nullptr) {
             current = current->parent;
             events[current->name] = current;

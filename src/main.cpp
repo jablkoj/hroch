@@ -179,9 +179,56 @@ void reconstruct_many(string hid) {
     delete h0;
 }
 
+void reconstruct(string atoms_file, string trees_dir, int count, int strategy) {
+    string outputfile_name = "hroch_" + atoms_file;
+    for(auto& c : outputfile_name) if (c=='/') c = '-';
+    outputfile_name = "outputs/"+outputfile_name+".histories";
+    ofstream ofile(outputfile_name, fstream::out);
+    
+    Machine* machine = nullptr;
+    if (strategy == SCORE_CL) machine = new MachineOne();
+    if (strategy == SCORE_BAC_NC) machine = new MachineBachelor();
+    if (strategy == SCORE_BAC) machine = new MachineBachelor();
+    if (strategy == SCORE_LR) machine = new MachineLinear();
+    if (machine != nullptr) machine->load();
+    
+    int shortest = 123456789;
+    vector<History*> hists;
+    vector<int> lengths(1000, 0);
+
+    For(i, count) {
+        History* h = new History(atoms_file, trees_dir, strategy);
+        h->set_strategy(strategy, machine);
+        h->real_reconstruct();
+        int num_events = SIZE(h->events);
+        lengths[num_events]++;
+        if (num_events < shortest) {
+            shortest = num_events;
+            for(auto hp : hists) delete hp;
+            hists.clear();
+        }
+        hists.push_back(h);
+
+    }
+
+    if (machine != nullptr) delete machine;
+    ofile.close();
+}
+
+
+
+
+
 void help(string name) {
-    cout << "Usage: "<< name << " TESTNAME COUNT" << endl;
-    cout << "       reconstruct COUNT histories of TESTMAME DNA" << endl;
+    cout << "Usage: "<< name << "--solve ATOMFILE TREESDIR COUNT [STRATEGY]" << endl;
+    cout << "       Reconstructs COUNT histories of sequence given by ATOMFILE." << endl;
+    cout << "       Outputs some statistics, and set of shortest histories." << endl;
+    cout << "       Use one of te following strategies:" << endl;
+    cout << "          1: no cherryness, no scoring" << endl;
+    cout << "          2: use cherryness, but no scoring" << endl;
+    cout << "          5: simple scoring, no cherryness" << endl;
+    cout << "          6: simple scoring, with cherryness" << endl;
+    cout << "          7: [default] advanced scoring, with cherryness" << endl;
 
     cout << endl << "other (undocumented) options:" << endl;
     cout << "  --gen-test:      generate test data" << endl;
@@ -191,10 +238,11 @@ void help(string name) {
     cout << "  --rec:           make statistics of history reconstructin algorithms" << endl;
 }
 
+
 int main(int argc, char **argv) {
     setup_constants();
     auto args = parse_arguments(argc, argv);
-    cout << "Program started" << endl;
+    cout << "HROCH: Heuristic reconstrucion of cluster histories." << endl;
     if (args.count("--help")) {
         help(argv[0]);
         return 0;
@@ -207,4 +255,14 @@ int main(int argc, char **argv) {
         for(int i = 10; i<30; ++i)
             reconstruct_many("T2"+to_string(i));
     }
+    if (args.count("--solve")) {
+        assert(argc >= 5);
+        int strategy = SCORE_LR;
+        if (argc > 5) strategy = stoi(string(argv[5]));
+        int count = stoi(string(argv[4]));
+        string atoms_file = argv[2];
+        string trees_dir = argv[3];
+        reconstruct(atom_file, trees_dir, count, strategy);
+    }
+    cout << "Done." << endl;
 }

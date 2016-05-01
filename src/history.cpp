@@ -14,6 +14,25 @@ void History::init_zero() {
     strategy = NO_STRATEGY;
 }
 
+History::History(string atoms_file, string trees_dir, int strategy) {
+    init_zero();
+    open_check(f, atoms_file);
+    read_atoms(f);
+    f.close();
+    
+    cherry_forest = nullptr;
+    if (do_cheeryness) {
+        read_cherryness(trees_dir + "/");
+    } 
+    
+    for(auto la : leaf_atoms) {
+        HEvent* e = new HEvent(la.first, gen_event_name(), "leaf");
+        e->atoms = la.second;
+        events[e->name] = e;
+        leaf_events[e->species] = e;
+    }
+}
+
 History::History(string basename, string id) {
     init_zero();
     if (SIZE(id)) basename += "-" + id;
