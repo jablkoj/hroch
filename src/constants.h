@@ -23,6 +23,10 @@ using namespace std;
 #define DATAPATH "data/"
 #define epsilon 1e-10
 
+extern int LOWER_RANGE;
+extern int UPPER_RANGE;
+extern string TEST_CASE;
+
 extern char bases[];
 struct trint;
 class GAtom;

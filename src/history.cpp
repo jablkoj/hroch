@@ -15,7 +15,9 @@ void History::init_zero() {
 }
 
 History::History(string atoms_file, string trees_dir, int strategy) {
+    assert(strategy != 0);
     init_zero();
+    ifstream f;
     open_check(f, atoms_file);
     read_atoms(f);
     f.close();

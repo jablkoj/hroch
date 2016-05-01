@@ -45,7 +45,9 @@ public:
 
     void proc_learn();
     void proc_reconstruct(int number = EVAL_INF);
+    void real_reconstruct();
     void proc_test_candi(int strategy, string mark);
+    void proc_test_score(int strategy, string mark);
     void rec_parent(HEvent* event);
     void rec_compute_parent(const Candidate& C, HEvent* event);
     HEvent* rec_see_event(const Candidate& C, HEvent* event);
@@ -73,6 +75,7 @@ public:
     void write_stats(ostream& os);
     double get_time();
 
+    History(string atoms_file, string trees_dir, int strategy);
     History(string basename, string id = "");
     History(History* original);
     ~History();

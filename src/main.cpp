@@ -38,10 +38,10 @@ void write_all_stats(map<string, vector<double>>& stats, ostream& os) {
 
 void test_candi() {
     map<string, vector<double>> stat_val;
-    ofstream file("stats/last-stats");
-    string prefix = "T4";
+    string prefix = TEST_CASE;
+    ofstream file("stats/candi-stats"+prefix);
 
-    for(int hid = 10; hid<60; ++hid) {
+    for(int hid = LOWER_RANGE; hid<UPPER_RANGE; ++hid) {
         History* h0 = new History(DATAPATH "generated", prefix+to_string(hid));
         History* h1 = new History(h0);
         h1->stats["_name"] = hid;
@@ -49,9 +49,35 @@ void test_candi() {
         h1->proc_test_candi(CHERRY_NO,"1nc");
         h1->proc_test_candi(CHERRY_TREE,"1ct");
         h1->proc_test_candi(CHERRY_LEN,"1cl");
-        h1->proc_test_candi(SCORE_BAC_NC,"nc");
+        h1->proc_test_candi(SCORE_BAC_NC," nc");
         h1->proc_test_candi(SCORE_BAC,"def");
-        h1->proc_test_candi(SCORE_CL,"cl");
+        h1->proc_test_candi(SCORE_CL," cl");
+    
+        h1->write_stats(file);
+        file << endl;
+        for(auto sp : h1->stats) stat_val[sp.first].push_back(sp.second);
+        delete h0;
+        delete h1;
+    }
+    write_all_stats(stat_val,cout);
+    write_all_stats(stat_val,file);
+    file.close();
+}
+
+void test_score() {
+    map<string, vector<double>> stat_val;
+    string prefix = TEST_CASE;
+    ofstream file("stats/score-stats"+prefix);
+
+    for(int hid = LOWER_RANGE; hid<UPPER_RANGE; ++hid) {
+        History* h0 = new History(DATAPATH "generated", prefix+to_string(hid));
+        History* h1 = new History(h0);
+        h1->stats["_name"] = hid;
+        
+        h1->proc_test_score(CHERRY_TREE,"1ct");
+        h1->proc_test_score(SCORE_BAC_NC," nc");
+        h1->proc_test_score(SCORE_BAC,"def");
+        h1->proc_test_score(SCORE_LR," lr");
     
         h1->write_stats(file);
         file << endl;
@@ -101,7 +127,7 @@ void train_history(Machine* machine, string name) {
 void train() {
     full = 0;
     Machine* machine = new MachineLinear();
-    for(int i = 10000; i < 14000; ++i) train_history(machine,"L4"+to_string(i));
+    for(int i = 10000; i < 15000; ++i) train_history(machine,"L4"+to_string(i));
     machine->save();
     delete machine;
     cout << "training finished" << endl;
@@ -234,7 +260,8 @@ void help(string name) {
     cout << "  --gen-test:      generate test data" << endl;
     cout << "  --gen-train:     generate train data" << endl;
     cout << "  --train:         produce lr-train file" << endl;
-    cout << "  --test:          make statistics of candidate proposal algorithms" << endl;
+    cout << "  --test-c:        make statistics of candidate proposal algorithms" << endl;
+    cout << "  --test-s:        make statistics of scoring algorithms" << endl;
     cout << "  --rec:           make statistics of history reconstructin algorithms" << endl;
 }
 
@@ -250,10 +277,11 @@ int main(int argc, char **argv) {
     if (args.count("--gen-test")) generate_test();
     if (args.count("--gen-train")) generate_train();
     if (args.count("--train")) train();
-    if (args.count("--test")) test_candi();
+    if (args.count("--test-c")) test_candi();
+    if (args.count("--test-s")) test_score();
     if (args.count("--rec")) {
-        for(int i = 10; i<30; ++i)
-            reconstruct_many("T2"+to_string(i));
+        for(int i = LOWER_RANGE; i<UPPER_RANGE; ++i)
+            reconstruct_many(TEST_CASE+to_string(i));
     }
     if (args.count("--solve")) {
         assert(argc >= 5);
@@ -262,7 +290,7 @@ int main(int argc, char **argv) {
         int count = stoi(string(argv[4]));
         string atoms_file = argv[2];
         string trees_dir = argv[3];
-        reconstruct(atom_file, trees_dir, count, strategy);
+        reconstruct(atoms_file, trees_dir, count, strategy);
     }
     cout << "Done." << endl;
 }

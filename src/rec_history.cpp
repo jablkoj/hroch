@@ -4,17 +4,11 @@ void History::rec_parent(HEvent* event) {
     set<Candidate> cset = rec_candidates(event);
     vector<Candidate> cs(cset.begin(), cset.end());
     if (SIZE(cs) == 0) return;
-    double sum_gscores = 0.0;
     vector<double> sum_scores = {0};
     for(auto c : cs) {
         double score = rec_score(c, event);
         sum_scores.push_back(sum_scores.back() + score);
-        //HEvent *e = rec_see_event(c,event);
-        //if(is_original(e)) sum_gscores += score;
-        //delete e;
     }
-    //cout << "n=" << SIZE(cs) << "  g=" << sum_gscores << "  all="
-    //     << sum_scores.back() << endl;
     double pick = random_double(0, sum_scores.back());
     For(i, SIZE(cs)) if (pick < sum_scores[i+1]) {
         rec_compute_parent(cs[i], event);
@@ -74,9 +68,9 @@ double History::rec_score(const Candidate& c, HEvent* event) {
 }
 
 void History::proc_learn() {
-    hevent* current = events.begin()->second;
+    HEvent* current = events.begin()->second;
     double now_time = current->event_time;
-    current = new hevent(current->species, gen_event_name(), "", current);
+    current = new HEvent(current->species, gen_event_name(), "", current);
     events[current->name] = current;
     current->event_time = now_time -= 0.01;
     
@@ -154,9 +148,9 @@ void History::proc_reconstruct(int number) {
 }
 
 void History::real_reconstruct() {
-    hevent* current = events.begin()->second;
+    HEvent* current = events.begin()->second;
     double now_time = current->event_time;
-    current = new hevent(current->species, gen_event_name(), "", current);
+    current = new HEvent(current->species, gen_event_name(), "", current);
     events[current->name] = current;
     current->event_time = now_time -= 0.01;
     
@@ -203,4 +197,59 @@ void History::proc_test_candi(int strategy, string mark) {
     stats["ctest "+mark] = double(ok_cnt)/tot_cnt;
 }
 
+
+void History::proc_test_score(int strategy, string mark) {
+    assert(SIZE(leaf_species)==1);
+    HEvent* current = leaf_events.begin()->second;
+    Machine* machine = nullptr;
+    if (strategy == SCORE_CL) machine = new MachineOne();
+    if (strategy == SCORE_BAC_NC) machine = new MachineBachelor();
+    if (strategy == SCORE_BAC) machine = new MachineBachelor();
+    if (strategy == SCORE_LR) machine = new MachineLinear();
+    if (machine != nullptr) machine->load();
+    set_strategy(strategy, machine);
+
+    int tot_cnt = 100;
+    double sum_prob = 0.0;
+    double sum_cnt = 0.0;
+    int size_sum = 0;
+    int is_max_sum = 0;
+
+    For(i, tot_cnt) {
+        double tot_score = 0.0;
+        double ok_score = 0.0;
+        double ok_cnt = 0;
+        double max_score = 0.0;
+        int is_max_good = 0;
+        set<Candidate> cs = rec_candidates(current);
+        assert(SIZE(cs));
+
+        for(auto c : cs) {
+            double score = rec_score(c,current);
+            HEvent *e = rec_see_event(c,current);
+            if (score > max_score) is_max_good = 0;
+            if(is_original(e)) {
+                if (score > max_score) is_max_good = 1;
+                ok_score += score;
+                ok_cnt += 1;
+            }
+            max_score = max(max_score, score);
+            //if (i == 0) {
+            //    cout << mark << "score " << is_original(e) << " is " << score << endl; 
+            //}
+            tot_score += score;
+            delete e;
+        }
+        is_max_sum += is_max_good;
+        sum_prob += ok_score / tot_score;
+        sum_cnt += ok_cnt / double(SIZE(cs));
+        size_sum += SIZE(cs);
+    }
+    if (machine != nullptr) delete machine;
+    
+    stats["_size "+mark] = double(size_sum)/tot_cnt;
+    stats["cnt   "+mark] = double(sum_cnt)/tot_cnt;
+    stats["score "+mark] = double(sum_prob)/tot_cnt;
+    stats["good  "+mark] = double(is_max_sum)/tot_cnt;
+}
 

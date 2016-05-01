@@ -21,7 +21,7 @@ WFLAGS=-Wall -Wextra -Wno-unused-result
 
 # commands
 
-all: $(BINDIR)/$(TARGET)
+all: $(BINDIR)/$(TARGET) outputs
 
 $(BINDIR)/$(TARGET): $(OBJECTS)
 	$(CXX) -o $@ $(WFLAGS) $(OBJECTS)
@@ -33,6 +33,9 @@ $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp $(INCLUDES)
 
 server: all
 	scp -r Makefile src bio:dups/
+
+outputs:
+	mkdir -p outputs
 
 clean:
 	$(RM) $(OBJECTS)
