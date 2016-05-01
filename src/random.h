@@ -1,12 +1,14 @@
+// Probabilistic model used for generated data
+
 #ifndef RANDOM_H
 #define RANDOM_H
 
 #include"constants.h"
 
 void random_init();
-double random_double(); // nahodne [0.0, 1.0)
-double random_double(double from, double to); // nahodne [from, to)
-int random_int(int from, int to); // nahodne [from, to)
+double random_double(); // random from interval [0.0, 1.0)
+double random_double(double from, double to); // random from interval [from, to)
+int random_int(int from, int to); // random integer from interval [from, to)
 
 class Model {
 private:
@@ -20,7 +22,6 @@ private:
     const int mean_dist = 306718;
     const double event_rate = 200;
     const double mut_alpha = 1./3.;
-
    
     static Model* _instance;
     Model();

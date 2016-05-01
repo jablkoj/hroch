@@ -25,7 +25,8 @@ Dynamics::Dynamics(History* history, HEvent* event) {
 const int dx[] = { 0, -1,-1, 0, 0,-1,-1, 0};
 const int dy[] = { 0, -1, 0,-1, 0, 1, 0, 1};
 
-// Use extreme caution in next two functions, they are wierd to be as fast as possible.
+// Use extreme caution in next two functions, 
+// they are weird to be as fast as possible.
 void Dynamics::compute_graph(double dupm, double delm, double deli) {
     this->dupm = dupm;
     this->delm = delm;
@@ -226,27 +227,20 @@ HEvent* compute_next_AP(const pii& deletion, const string& species, const string
 }
 
 void History::rec_compute_parent(const Candidate& C, HEvent* event) {
-    //cout << "Candidate " << C << " won\n";
-
     vector<HAtom> A0, A;
     vector<int> P;
     vector<pii> deletions;
 
     compute_A0A1P1(C, event->atoms, A0,A,P, deletions);
     sort(deletions.begin(), deletions.end(), greater<pii>());
-    //cout << A0 << endl;
     
     HEvent* current = new HEvent(event->species, gen_event_name(), "");
     current->atoms = A0;
-    //current->write_detailed(cout);
     for(auto d : deletions) { 
-        //cout << A << " " << d.first << " " << d.second << " (" << A[d.first] << ")" << endl;
         current = compute_next_AP(d, event->species, gen_event_name(), 
                                   current, A, P);
         current->type = (current->parent->type=="")?(C.is_inv()?"dupi":"dup"):"del";
     }
-    //cout << A << endl;
-    //cout << event->atoms << endl;
 
     assert(event->atoms == A);
     event->atom_parents = P;
@@ -278,6 +272,7 @@ void History::rec_setup_scoring_data(const Candidate& C, HEvent* event, ScoringD
     compute_A0A1P1(C, event->atoms, A0,A,P, sd->deletions);
     sd->first_event = new HEvent(event->species, "test", "");
     sd->first_event->atoms = A0;
+    // Uncomment if you need second event too:
     /*sd->second_event = new HEvent(event->species, "test", "dup");
     if (C.is_inv()) sd->second_event->type += "i";
     sd->second_event->atoms = A;

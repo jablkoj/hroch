@@ -7,17 +7,14 @@ void generate_history(double time, string id) {
     delete history; 
 }
 
-void generate() {
-    for(int i = 10; i < 60; ++i) generate_history(0.02, "T2"+to_string(i));
-    for(int i = 10; i < 60; ++i) generate_history(0.03, "T3"+to_string(i));
-    for(int i = 10; i < 60; ++i) generate_history(0.04, "T4"+to_string(i));
-    for(int i = 10; i < 60; ++i) generate_history(0.05, "T5"+to_string(i));
-/*    
-    for(int i = 10000; i < 11000; ++i) generate_history(0.02, "L2"+to_string(i));
-    for(int i = 10000; i < 11000; ++i) generate_history(0.03, "L3"+to_string(i));
-    for(int i = 10000; i < 11000; ++i) generate_history(0.04, "L4"+to_string(i));
-    for(int i = 10000; i < 11000; ++i) generate_history(0.05, "L5"+to_string(i));
-*/
+void generate_test() {
+    for(int i = 100; i < 200; ++i) generate_history(0.02, "F2"+to_string(i));
+    for(int i = 100; i < 200; ++i) generate_history(0.03, "F3"+to_string(i));
+    for(int i = 100; i < 200; ++i) generate_history(0.04, "F4"+to_string(i));
+}
+
+void generate_train() {
+    for(int i = 10000; i < 15000; ++i) generate_history(0.04, "L4"+to_string(i));
 }
 
 void write_all_stats(map<string, vector<double>>& stats, ostream& os) {
@@ -28,11 +25,13 @@ void write_all_stats(map<string, vector<double>>& stats, ostream& os) {
         double avg = 0;
         for(double d : stat) avg += d;
         avg /= SIZE(stat);
+        double p0 = stat[0];
         double p10 = stat[int(SIZE(stat)*0.1)];
         double p50 = stat[int(SIZE(stat)*0.5)];
         double p90 = stat[int(SIZE(stat)*0.9)];
 
-        os << sp.first << "  AGV: " << avg << "  10% " << p10
+        os << sp.first << "  AGV: " << avg
+           << "   0% " <<  p0 << "  10% " << p10
            << "  50% " << p50 << "  90% " << p90 << endl;
     }
 }
@@ -68,7 +67,13 @@ void test_candi() {
 int full = 0, stupid = 0, smart = 0;
 
 void train_history(Machine* machine, string name) {
+    error_happened = 0;
     History* h0 = new History(DATAPATH "generated", name);
+    if (error_happened) {
+        cout << "Could not train with hitory " << name << endl;
+        return;
+    }
+    
     History* hsp = new History(h0);
     hsp->set_strategy(SCORE_LR,machine);
     hsp->proc_learn();
@@ -96,7 +101,7 @@ void train_history(Machine* machine, string name) {
 void train() {
     full = 0;
     Machine* machine = new MachineLinear();
-    for(int i = 10000; i < 11000; ++i) train_history(machine,"L4"+to_string(i));
+    for(int i = 10000; i < 14000; ++i) train_history(machine,"L4"+to_string(i));
     machine->save();
     delete machine;
     cout << "training finished" << endl;
@@ -165,23 +170,41 @@ void reconstruct_many(string hid) {
         return;
     }
     delete hsp;
-    reconstruct_one(h0, hid, CHERRY_NO);
-    reconstruct_one(h0, hid, CHERRY_TREE);
-    reconstruct_one(h0, hid, CHERRY_LEN);
+    //reconstruct_one(h0, hid, CHERRY_NO);
+    //reconstruct_one(h0, hid, CHERRY_TREE);
+    //reconstruct_one(h0, hid, CHERRY_LEN);
+    //reconstruct_one(h0, hid, SCORE_BAC_NC);
     reconstruct_one(h0, hid, SCORE_BAC);
     reconstruct_one(h0, hid, SCORE_LR);
     delete h0;
+}
+
+void help(string name) {
+    cout << "Usage: "<< name << " TESTNAME COUNT" << endl;
+    cout << "       reconstruct COUNT histories of TESTMAME DNA" << endl;
+
+    cout << endl << "other (undocumented) options:" << endl;
+    cout << "  --gen-test:      generate test data" << endl;
+    cout << "  --gen-train:     generate train data" << endl;
+    cout << "  --train:         produce lr-train file" << endl;
+    cout << "  --test:          make statistics of candidate proposal algorithms" << endl;
+    cout << "  --rec:           make statistics of history reconstructin algorithms" << endl;
 }
 
 int main(int argc, char **argv) {
     setup_constants();
     auto args = parse_arguments(argc, argv);
     cout << "Program started" << endl;
-    if (args.count("generate")) generate();
-    if (args.count("train")) train();
-    if (args.count("test")) test_candi();
-    if (args.count("rec")) {
-        for(int i = 10; i<60; ++i)
+    if (args.count("--help")) {
+        help(argv[0]);
+        return 0;
+    }
+    if (args.count("--gen-test")) generate_test();
+    if (args.count("--gen-train")) generate_train();
+    if (args.count("--train")) train();
+    if (args.count("--test")) test_candi();
+    if (args.count("--rec")) {
+        for(int i = 10; i<30; ++i)
             reconstruct_many("T2"+to_string(i));
     }
 }

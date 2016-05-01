@@ -14,11 +14,8 @@ double sc_seq_dna_len(ScoringData* sd) {
         len += sd->history->type_dna_length[atom.atype()];
     return log(len);
 }
-double sc_prev_eete(ScoringData* sd) {
-    return sd->prev_bpc/2 - sd->num_types - 1;
-}
-double sc_post_eete(ScoringData* sd) {
-    return sd->post_bpc/2 - sd->num_types - 1;
+double sc_post_bpc(ScoringData* sd) {
+    return log(sd->post_bpc);
 }
 double sc_ev_len(ScoringData* sd) {
     return log(SIZE(sd->c.directions));
@@ -49,16 +46,16 @@ double sc_ev_sides(ScoringData* sd) {
     return res;     
 }
 double sc_ev_prev_sp(ScoringData* sd) {
-    return SIZE(sd->prev_sp);
+    return SIZE(sd->prev_sp)*0.5;
 }
 double sc_ev_post_sp(ScoringData* sd) {
-    return SIZE(sd->post_sp);
+    return SIZE(sd->post_sp)*0.5;
 }
 double sc_ev_prev_bp(ScoringData* sd) {
-    return SIZE(sd->prev_bp);
+    return SIZE(sd->prev_bp)*0.5;
 }
 double sc_ev_post_bp(ScoringData* sd) {
-    return SIZE(sd->post_bp);
+    return SIZE(sd->post_bp)*0.5;
 }
 double sc_ev_dsig(ScoringData* sd) {
     if (!sd->c.is_inv()) return 0.0;
@@ -80,14 +77,14 @@ double sc_avg_cherry(ScoringData* sd) {
 double sc_prod_cherry(ScoringData* sd) {
     double prod = 1.;
     for(auto ap : sd->atom_friends) {
-        prod *= sd->history->cherryness(ap.first, ap.second, CHERRY_TREE);
+        prod *= min(1.,sd->history->cherryness(ap.first, ap.second, CHERRY_TREE));
     }
     return prod;
 }
 double sc_len_cherry(ScoringData* sd) {
     double prod = 1.;
     for(auto ap : sd->atom_friends) {
-        prod *= sd->history->cherryness(ap.first, ap.second, CHERRY_LEN);
+        prod *= min(1.,sd->history->cherryness(ap.first, ap.second, CHERRY_LEN));
     }
     return prod;
 }
@@ -96,8 +93,7 @@ vector<double> all_scores(History* h, const Candidate& c, HEvent* e) {
     vector<scoring_function> functions = {
         sc_seq_len,
         sc_seq_num_types,
-        sc_prev_eete,
-        sc_post_eete,
+        sc_post_bpc,
 
         sc_ev_len,
         sc_ev_dist,
@@ -119,6 +115,28 @@ vector<double> all_scores(History* h, const Candidate& c, HEvent* e) {
     For(i, SIZE(functions)) {
         res[i] = functions[i](sd);
     }
+    /*For(i, SIZE(functions)) {
+        res.push_back(exp(res[i]));
+        res.push_back(exp(res[i]-res[0]));
+        
+        res.push_back(res[i]/exp(res[0]));
+        res.push_back(res[i]/exp(res[1]));
+        res.push_back(res[i]/exp(res[2]));
+        res.push_back(res[i]/exp(res[3]));
+
+        res.push_back(res[i]*res[0]);
+        res.push_back(res[i]*res[1]);
+        res.push_back(res[i]*res[2]);
+        res.push_back(res[i]*res[3]);
+    }*/
+    res.push_back(exp(res[14]));
+    res.push_back(res[0]*res[1]);
+    res.push_back(res[0]*res[2]);
+    res.push_back(res[0]*res[14]);
+    res.push_back(res[1]*res[1]);
+    res.push_back(res[1]/exp(res[3]));
+    res.push_back(res[2]*res[8]);
+
     delete sd;
     return res;
 }

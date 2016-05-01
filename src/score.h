@@ -7,23 +7,22 @@
 #define SC_SEQ_NUM_TYPES 1
 //#define SC_SEQ_DNA_LEN -1
 // estimated events to end
-#define SC_PREV_EETE 2
-#define SC_POST_EETE 3
+#define SC_POST_BPC 2
 
-#define SC_EV_LEN 4
-#define SC_EV_DIST 5
-#define SC_DEL_NUM 6
-#define SC_DEL_LEN 7
-#define SC_EV_SIDES 8
-#define SC_EV_PREV_SP 9
-#define SC_EV_POST_SP 10
-#define SC_EV_PREV_BP 11
-#define SC_EV_POST_BP 12
-#define SC_EV_DSIG 13
+#define SC_EV_LEN 3
+#define SC_EV_DIST 4
+#define SC_DEL_NUM 5
+#define SC_DEL_LEN 6
+#define SC_EV_SIDES 7
+#define SC_EV_PREV_SP 8
+#define SC_EV_POST_SP 9
+#define SC_EV_PREV_BP 10
+#define SC_EV_POST_BP 11
+#define SC_EV_DSIG 12
 
-#define SC_AVG_CHERRY 14
-#define SC_PROD_CHERRY 15
-#define SC_LEN_CHERRY 16
+#define SC_AVG_CHERRY 13
+#define SC_PROD_CHERRY 14
+#define SC_LEN_CHERRY 15
 
 vector<double> all_scores(History* h, const Candidate& c, HEvent* e);
 

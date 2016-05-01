@@ -6,7 +6,7 @@ double MachineBachelor::predict(const vector<double>& values) {
         values[SC_EV_LEN] * 1. + 
         values[SC_EV_SIDES] * -2. +
         values[SC_EV_DSIG] * 6.0 +
-        (values[SC_EV_POST_BP] - values[SC_EV_PREV_BP]) * 3.0;
+        (values[SC_EV_POST_BP] - values[SC_EV_PREV_BP]) * 6.0;
     return exp(sum);
 }
 
@@ -37,5 +37,6 @@ double MachineLinear::predict(const vector<double>& values) {
     assert(SIZE(values) == SIZE(coef));
     double res = intercept;
     For(i, SIZE(values)) res += values[i]*coef[i];
-    return pow(1./(1.+exp(-res)),4); 
+    //return pow(1./(1.+exp(-res)),4); 
+    return 1./(1.+exp(-res)); 
 }

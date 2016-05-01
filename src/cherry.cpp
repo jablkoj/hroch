@@ -2,8 +2,6 @@
 
 bool CherryTree::has_cherry(const HAtom& a, const HAtom& b) {
     int x = id[a], y = id[b];
-    //cout << "hc " << a << " " << b << " " << a.get_ids() << " " << b.get_ids() << endl;
-    //cout << "hc " << x << " " << y << " " << edges[x] << " " << edges[y] << endl;
     return edges[x] == edges[y];
 }
 
@@ -51,7 +49,6 @@ int CherryTree::parse(map<string,int>& ids, const string& word, int from, int to
             pos++;
         }
     } else {
-        //cout << word.substr(from,to-from) << " "<< ids[word.substr(from, to-from)] << " " << me << endl;
         id[HAtom(atype, ids[word.substr(from, to-from)])] = me;
     }
     return me;
@@ -68,7 +65,7 @@ double CherryForest::cherryness(const HAtom& a, const HAtom& b) {
     // if maximum probability is low, we cant trust cherryness much, 
     // therefore we add some bias to deal with it
     if (total < epsilon) total = 1;
-    return positive / total + bias[a.atype()];
+    return min(1.0, positive / total + bias[a.atype()]);
 }
 
 void CherryForest::merge(const HAtom& a, const HAtom& b) {
@@ -92,7 +89,13 @@ void CherryForest::read_atom(History* history, int type, string filename) {
     if (sizes[type] < 4) return;
     if (debuging)
         cout << "reading starts " << type << " " << filename << " " << sizes[type] << endl;
-    fstream file (filename);
+    ifstream file (filename, fstream::in);
+    if (!file.is_open()) {
+        cout << "ERROR: Cherry files not found" << endl;
+        error_happened = 1;
+        return;
+    }
+
     string line, first, second, word;
     while(getline(file, line)) if (line == "   translate") break;
     map<string, int> ids;
@@ -109,7 +112,6 @@ void CherryForest::read_atom(History* history, int type, string filename) {
         file >> word >> word >> word >> word >> word >> word >> word >> word >> word;
         file >> probability >> word >> word;
         word.pop_back();
-        //cout << probability << " " << word << endl;
         trees[type].push_back(CherryTree(probability, type, ids, word));
         best_probability = max(best_probability, probability);
         cnt++;

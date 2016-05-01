@@ -47,15 +47,17 @@ void GHistory::generate_random(double time, int sequence_length) {
     for(int i = SIZE(events)-1; i>=0; --i)
         events[i]->compute_atom_ids(sequences[i]);
 
-    for(auto s : sequences) cout << *s;
-    cout << endl;
-    for(auto s : sequences) s->write_atoms_short();
-    cout << endl;
-    for(auto e : events) cout << *e;
-    cout << endl;
-    sequences.back()->write_atoms_short();
-    cout << SIZE(sequences) << " " << sequences.back()->atom_count() << " " 
-         << sequences.back()->length() << endl;
+    if (debuging) {
+        for(auto s : sequences) cout << *s;
+        cout << endl;
+        for(auto s : sequences) s->write_atoms_short();
+        cout << endl;
+        for(auto e : events) cout << *e;
+        cout << endl;
+        sequences.back()->write_atoms_short();
+        cout << SIZE(sequences) << " " << sequences.back()->atom_count() << " " 
+            << sequences.back()->length() << endl;
+    }
 }
 
 void GHistory::save_to_files(string basename, string id) {

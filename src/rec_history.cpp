@@ -8,10 +8,10 @@ void History::rec_parent(HEvent* event) {
     vector<double> sum_scores = {0};
     for(auto c : cs) {
         double score = rec_score(c, event);
-        HEvent *e = rec_see_event(c,event);
-        if(is_original(e)) sum_gscores += score;
-        delete e;
         sum_scores.push_back(sum_scores.back() + score);
+        //HEvent *e = rec_see_event(c,event);
+        //if(is_original(e)) sum_gscores += score;
+        //delete e;
     }
     //cout << "n=" << SIZE(cs) << "  g=" << sum_gscores << "  all="
     //     << sum_scores.back() << endl;
@@ -35,7 +35,7 @@ set<Candidate> History::rec_candidates(HEvent* event) {
     if (strategy == NO_STRATEGY || strategy == CHERRY_NO ||
         strategy == CHERRY_TREE || strategy == CHERRY_LEN) {
         Dynamics d = Dynamics(this, event);
-        d.compute_graph(2.0,0.6,0.05);
+        d.compute_graph(2.0,0.5,0.05);
         int cnt = 0;
         while(true) {
             Candidate c = d.get_candidate();
@@ -49,12 +49,12 @@ set<Candidate> History::rec_candidates(HEvent* event) {
     }
     
     Dynamics d = Dynamics(this, event);
-    d.compute_graph(1.2,0.5,0.04);
+    d.compute_graph(1.2,0.5,0.05);
     For(i, SIZE(event->atoms)) {
         Candidate c = d.get_candidate();
         if (c.is_valid()) res.insert(c);
     }
-    d.compute_graph(2.0,0.5,0.04);
+    d.compute_graph(2.0,0.5,0.05);
     For(i, (SIZE(event->atoms) * 3)) {
         Candidate c = d.get_candidate();
         if (c.is_valid()) res.insert(c);
@@ -66,7 +66,7 @@ double History::rec_score(const Candidate& c, HEvent* event) {
     if (machine == nullptr) return 1.0;
     vdo values = all_scores(this, c, event);
     if (strategy == KNOW_HOW) {
-        machine->train_data(values, 1);
+        //machine->train_data(values, 1);
         return 1.0;
     }
     double res = machine->predict(values);

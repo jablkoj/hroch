@@ -1,3 +1,5 @@
+// Representation of atom used when generating sequences
+
 #ifndef ATOM_H
 #define ATOM_H
 

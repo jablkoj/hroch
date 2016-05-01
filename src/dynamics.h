@@ -1,7 +1,10 @@
+// Implementation of candidate sampling algorithm.
+
 #ifndef DYNAMICS_H
 #define DYNAMICS_H
 
 #include"constants.h"
+ 
 
 class Dynamics {
     const double startp = 1.0;
@@ -14,7 +17,6 @@ class Dynamics {
     //vector<double> csum_ep;
     double sum_endpoints;
     double dupm, delm, deli, deli3;
-    // }}}
     int n;
 public:
     Dynamics(History* history, HEvent* event);

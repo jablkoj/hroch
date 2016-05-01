@@ -1,3 +1,5 @@
+// Representation of events during reconstruction
+
 #ifndef HEVENT_H
 #define HEVENT_H
 

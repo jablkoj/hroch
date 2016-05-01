@@ -1,3 +1,5 @@
+// Representation of events used when generating data
+
 #ifndef GEVENT_H
 #define GEVENT_H
 

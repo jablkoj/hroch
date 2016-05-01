@@ -1,5 +1,13 @@
 #include"history.h"
 
+void open_check(ifstream &f, string filename) {
+    f.open(filename, fstream::in);
+    if (!f.is_open()) {
+        cerr << "Error opening file " << filename << endl;
+        exit(1);
+    }
+}
+
 void History::init_zero() {
     machine = nullptr;
     cherry_mode = DEFAULT_CHERRY;
@@ -13,15 +21,19 @@ History::History(string basename, string id) {
     cout << "Loading " << basename << endl; 
 
     for(string species : {"unicorn"}) {
-        f.open(basename+"-"+species+".dna", fstream::in);
+        open_check(f, basename+"-"+species+".dna");
         read_final_sequence(species, f);
         f.close();
     }
-    f.open(basename+".atoms", fstream::in);
+
+    open_check(f, basename+".atoms");
     read_atoms(f);
     f.close();
-    read_atoms_align(basename+"/"); 
-    f.open(basename+".nhistory", fstream::in);
+
+    // We actualt dont need the alignments
+    /* read_atoms_align(basename+"/"); */
+
+    open_check(f, basename+".nhistory");
     read_events(f);
     f.close();
     cherry_forest = nullptr;
@@ -76,16 +88,18 @@ void History::read_atoms(istream& is) {
     while(is >> species >> name >> type >> inverz >> from >> to) {
         type *= inverz;
         leaf_atoms[species].push_back(HAtom(type, HAtom::str_to_id(name)));
+        type_dna_length[type] = max(type_dna_length[type], to-from);
+        type_dna_length[-type] = max(type_dna_length[-type], to-from);
     }
     for(auto la : leaf_atoms) leaf_species.push_back(la.first);
 }
 
 void History::read_atoms_align(const string& basepath) {
-    map<int, fstream> files;
+    map<int, ifstream> files;
     for(auto atoms : leaf_atoms) for(HAtom atom : atoms.second) 
         if (files.count(atom.atype()) == 0)
-            files[atom.atype()].open(basepath+to_string(atom.atype())+".aln", 
-                                     fstream::in);
+            open_check(files[atom.atype()], 
+                       basepath+to_string(atom.atype())+".aln");
     for(auto& f : files) {
         string word, buffer, name;
         while(f.second >> word) {
@@ -97,9 +111,6 @@ void History::read_atoms_align(const string& basepath) {
         }
         if (SIZE(name)) leaf_atom_dna[HAtom::str_to_id(name)] = buffer;
         f.second.close();
-    }
-    for(auto atoms : leaf_atoms) for(HAtom atom : atoms.second) { 
-        type_dna_length[atom.atype()] = SIZE(leaf_atom_dna[atom.get_ids()[0]]);
     }
 }
 
@@ -140,8 +151,9 @@ void History::read_cherryness(const string& basepath) {
     set<int> atom_types;
     for(auto la : leaf_atoms) for (auto atom : la.second) 
         atom_types.insert(atom.atype());
-    for(const auto& at : atom_types) 
+    for(const auto& at : atom_types) {
         cherry_forest->read_atom(this, at, basepath + to_string(at) + ".nex.trprobs");
+    }
 }
 
 bool compare(HEvent* e1, HEvent* e2) {

@@ -1,3 +1,5 @@
+// Representation of DNA sequence used for generated data
+
 #ifndef SEQUENCE_H
 #define SEQUENCE_H
 

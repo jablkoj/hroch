@@ -97,6 +97,8 @@ int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+extern int fail_on_error;
+extern int error_happened;
 extern int debuging;
 extern int stats;
 extern int do_cheeryness;

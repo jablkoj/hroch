@@ -1,3 +1,5 @@
+// Representation of histories used for generated data
+
 #ifndef GHISTORY_H
 #define GHISTORY_H
 

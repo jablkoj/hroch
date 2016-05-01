@@ -7,6 +7,8 @@ char base_inv[256];
 int debuging = 0;
 int stats = 0;
 int do_cheeryness = 1;
+int fail_on_error = 1;
+int error_happened = 0;
 
 void setup_constants() {
     random_init();

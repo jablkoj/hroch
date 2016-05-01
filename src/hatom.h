@@ -1,3 +1,5 @@
+// Representation of atom used in reconstruction
+
 #ifndef HATOM_H
 #define HATOM_H
 
