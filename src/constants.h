@@ -106,6 +106,8 @@ extern int error_happened;
 extern int debuging;
 extern int stats;
 extern int do_cheeryness;
+#define SPECIAL_TRAINING 47
+extern int strict_compare;
 extern char bases[BASES];
 extern int base_id[256];
 extern char base_inv[256];

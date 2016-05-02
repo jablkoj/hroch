@@ -2,7 +2,7 @@
 #include <iomanip>
 
 int LOWER_RANGE = 10;
-int UPPER_RANGE = 20;
+int UPPER_RANGE = 30;
 string TEST_CASE = "T4";
 
 char bases[BASES] = {'A', 'C', 'G', 'T'};
@@ -11,6 +11,7 @@ char base_inv[256];
 int debuging = 0;
 int stats = 0;
 int do_cheeryness = 1;
+int strict_compare = 0;
 int fail_on_error = 1;
 int error_happened = 0;
 
@@ -31,6 +32,8 @@ set<string> parse_arguments(int argc, char **argv) {
         if (arg == "--stats" || arg == "-s") stats = 1;
         if (arg == "--debug" || arg == "-d") debuging = 1;
         if (arg == "--no-cherry") do_cheeryness = 0;
+        if (arg == "--strict") strict_compare = 1;
+        if (arg == "--special-strict") strict_compare = SPECIAL_TRAINING;
         res.insert(arg);
     }
     return res;

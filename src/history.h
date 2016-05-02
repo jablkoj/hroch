@@ -58,7 +58,7 @@ public:
 
     HEvent* nth_from_end(int n);
     HEvent* resolve_deletion(HEvent* deletion);
-    int is_original(HEvent* event);
+    int is_original(HEvent* event, bool strict = false);
     int is_correct(bool weak = false);
     double cherryness(const HAtom& a, const HAtom& b, int mode = 0);
     void merge(const HAtom& a, const HAtom& b);

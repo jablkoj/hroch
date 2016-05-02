@@ -81,10 +81,12 @@ void History::proc_learn() {
         for(auto c : cs) {
             vdo values = all_scores(this, c, current);
             HEvent *e = rec_see_event(c,current);
-            if (is_original(e)) 
+            if (is_original(e, strict_compare)) 
                 good_values.push_back(values);
-            else
-                bad_values.push_back(values);
+            else {
+                if (strict_compare != SPECIAL_TRAINING || !is_original(e))
+                    bad_values.push_back(values);
+            }
             delete e;            
             stats["candidates"] += 1;
         }
@@ -184,7 +186,7 @@ void History::proc_test_candi(int strategy, string mark) {
         int best = 0;
         for(auto c : cs) {
             HEvent *e = rec_see_event(c,current);
-            best = max(best, is_original(e));
+            best = max(best, is_original(e, strict_compare));
             delete e;
         }
         ok_cnt += bool(best);
@@ -228,7 +230,7 @@ void History::proc_test_score(int strategy, string mark) {
             double score = rec_score(c,current);
             HEvent *e = rec_see_event(c,current);
             if (score > max_score) is_max_good = 0;
-            if(is_original(e)) {
+            if(is_original(e, strict_compare)) {
                 if (score > max_score) is_max_good = 1;
                 ok_score += score;
                 ok_cnt += 1;

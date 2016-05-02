@@ -115,27 +115,19 @@ vector<double> all_scores(History* h, const Candidate& c, HEvent* e) {
     For(i, SIZE(functions)) {
         res[i] = functions[i](sd);
     }
-    /*For(i, SIZE(functions)) {
+    For(i, SIZE(functions)) {
         res.push_back(exp(res[i]));
-        res.push_back(exp(res[i]-res[0]));
         
-        res.push_back(res[i]/exp(res[0]));
-        res.push_back(res[i]/exp(res[1]));
-        res.push_back(res[i]/exp(res[2]));
-        res.push_back(res[i]/exp(res[3]));
+        res.push_back(res[i]/(1+res[0]));
+        res.push_back(res[i]/(1+res[1]));
+        res.push_back(res[i]/(1+res[2]));
+        res.push_back(res[i]/(1+res[3]));
 
         res.push_back(res[i]*res[0]);
         res.push_back(res[i]*res[1]);
         res.push_back(res[i]*res[2]);
         res.push_back(res[i]*res[3]);
-    }*/
-    res.push_back(exp(res[14]));
-    res.push_back(res[0]*res[1]);
-    res.push_back(res[0]*res[2]);
-    res.push_back(res[0]*res[14]);
-    res.push_back(res[1]*res[1]);
-    res.push_back(res[1]/exp(res[3]));
-    res.push_back(res[2]*res[8]);
+    }
 
     delete sd;
     return res;

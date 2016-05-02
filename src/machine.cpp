@@ -16,7 +16,10 @@ void MachineLinear::train_data(const vector<double>& values, double result) {
     data.back().push_back(result);
 }
 void MachineLinear::save() {
-    ofstream file("regres/lr-train", fstream::out);
+    string strict = "";
+    if (strict_compare) strict = "-strict";
+    if (strict_compare==SPECIAL_TRAINING) strict = "-special";
+    ofstream file("regres/lr-train"+strict, fstream::out);
     for(auto d : data) 
         For(i,SIZE(d)) file << d[i] << char((i+1==SIZE(d))?'\n':' ');
     file.close();

@@ -216,11 +216,14 @@ double History::get_time() {
     return max_time - min_time;
 }
 
-int History::is_original(HEvent* event) {
+int History::is_original(HEvent* event, bool strict) {
     assert(SIZE(event->atom_parents));
     event->compute_diff();
     for(auto ev : original->events) 
         if (*(ev.second) == *(event)) {
+            if (strict && ev.second->compute_is_left() !=
+                event->compute_is_left()) continue;
+
             return (original->nth_from_end(1)==ev.second)?SAME_LAST:SAME_ANY;
         }
     return DIFFERENT;

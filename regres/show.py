@@ -5,9 +5,15 @@ from math import exp
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sys import stdin
+from sys import stdin, argv
 
-lines = open('lr-train','r').readlines()
+orig,cross1,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+if len(argv) > 1 and argv[1] == 'strict':
+    cross1,orig,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+if len(argv) > 1 and argv[1] == 'special':
+    cross2,cross1,orig = 'lr-train','lr-train-strict','lr-train-special'
+
+lines = open(orig,'r').readlines()
 model = open('lr-model','r').readlines()
 
 coef = map(float, model[1].split())

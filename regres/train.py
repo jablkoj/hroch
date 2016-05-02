@@ -5,18 +5,32 @@ from math import exp
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sys import stdin
+from sys import stdin, argv
 
-lines = open('lr-train','r').readlines()
+orig,cross1,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+if len(argv) > 1 and argv[1] == 'strict':
+    cross1,orig,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+if len(argv) > 1 and argv[1] == 'special':
+    cross2,cross1,orig = 'lr-train','lr-train-strict','lr-train-special'
+
+
+lines = open(orig,'r').readlines()
+linesc1 = open(cross1,'r').readlines()
+linesc2 = open(cross2,'r').readlines()
 output = open('lr-model','w')
+shuffle(lines)
+shuffle(linesc1)
+shuffle(linesc2)
+linesc0 = lines[:5000]
+linesc1 = linesc1[:5000]
+linesc2 = linesc2[:5000]
+lines = lines[5000:]
 
 X = []
 y = []
 A, B = 0, -1
 
-shuffle(lines)
-
-for line in lines[:-10000]:
+for line in lines:
     data = map(float, line.split())
     X.append(data[A:B])
     y.append(data[-1])
@@ -30,25 +44,24 @@ print >>output, len(coef)
 print >>output, ' '.join(map(str,coef))
 print >>output, model.intercept_[0]
 
-
 print(model.score(X,y))
 print(sum(y)/float(len(y)))
 print(coef)
 print(model.intercept_)
 
-predict = model.predict_proba(X)
-samew = sum([(y[i]-predict[i][1])**2 for i in range(len(y))])
-same = sum([(y[i]==(predict[i][1]>0.5)) for i in range(len(y))])
-print(1.*samew/len(y), 1.*same/len(y))
+def predict_on(linesc, name):
+    X = []
+    y = []
+    for line in linesc:
+        data = map(float, line.split())
+        X.append(data[A:B])
+        y.append(data[-1])
+    predict = model.predict_proba(X)
+    samew = sum([(y[i]-predict[i][1])**2 for i in range(len(y))])
+    same = sum([(y[i]==(predict[i][1]>0.5)) for i in range(len(y))])
+    print name, 1.*samew/len(y), 1.*same/len(y) 
 
-X = []
-y = []
-for line in lines[-10000:]:
-    data = map(float, line.split())
-    X.append(data[A:B])
-    y.append(data[-1])
-
-predict = model.predict_proba(X)
-samew = sum([(y[i]-predict[i][1])**2 for i in range(len(y))])
-same = sum([(y[i]==(predict[i][1]>0.5)) for i in range(len(y))])
-print(1.*samew/len(y), 1.*same/len(y))
+predict_on(lines, orig)
+predict_on(linesc0, orig)
+predict_on(linesc1, cross1)
+predict_on(linesc2, cross2)
