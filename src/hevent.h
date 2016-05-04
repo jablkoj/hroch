@@ -17,6 +17,8 @@ public:
     vector<int> directions;
     Candidate(int b1, int e1, int b2, int e2);
     Candidate(int b1, int e1, int b2, int e2, const vector<int>& directions);
+
+    void swap_dir();
     
     friend bool operator==(const Candidate& c1, const Candidate& c2) {
         return (c1.b1 == c2.b1) && 

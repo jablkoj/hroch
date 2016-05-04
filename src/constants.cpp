@@ -1,9 +1,9 @@
 #include"constants.h"
 #include <iomanip>
 
-int LOWER_RANGE = 10;
-int UPPER_RANGE = 30;
-string TEST_CASE = "T4";
+int LOWER_RANGE = 100;
+int UPPER_RANGE = 111;
+string TEST_CASE = "F4";
 
 char bases[BASES] = {'A', 'C', 'G', 'T'};
 int base_id[256];

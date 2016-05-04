@@ -115,7 +115,7 @@ vector<double> all_scores(History* h, const Candidate& c, HEvent* e) {
     For(i, SIZE(functions)) {
         res[i] = functions[i](sd);
     }
-    For(i, SIZE(functions)) {
+    /*For(i, SIZE(functions)) {
         res.push_back(exp(res[i]));
         
         res.push_back(res[i]/(1+res[0]));
@@ -127,7 +127,7 @@ vector<double> all_scores(History* h, const Candidate& c, HEvent* e) {
         res.push_back(res[i]*res[1]);
         res.push_back(res[i]*res[2]);
         res.push_back(res[i]*res[3]);
-    }
+    }*/
 
     delete sd;
     return res;

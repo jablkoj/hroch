@@ -7,17 +7,17 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sys import stdin, argv
 
-orig,cross1,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+orig,cross1,cross2,op = 'lr-train','lr-train-strict','lr-train-special','lr-model'
 if len(argv) > 1 and argv[1] == 'strict':
-    cross1,orig,cross2 = 'lr-train','lr-train-strict','lr-train-special'
+    cross1,orig,cross2,op = 'lr-train','lr-train-strict','lr-train-special','lr-model-strict'
 if len(argv) > 1 and argv[1] == 'special':
-    cross2,cross1,orig = 'lr-train','lr-train-strict','lr-train-special'
+    cross2,cross1,orig,op = 'lr-train','lr-train-strict','lr-train-special','lr-model-special'
 
 
 lines = open(orig,'r').readlines()
 linesc1 = open(cross1,'r').readlines()
 linesc2 = open(cross2,'r').readlines()
-output = open('lr-model','w')
+output = open(op,'w')
 shuffle(lines)
 shuffle(linesc1)
 shuffle(linesc2)

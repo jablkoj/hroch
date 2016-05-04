@@ -17,7 +17,8 @@
 #define SCORE_BAC_NC 5
 #define SCORE_BAC 6 
 #define SCORE_LR 7
-#define KNOW_HOW 8
+#define SCORE_LRS 8
+#define KNOW_HOW 9
 
 #define DEFAULT_CHERRY CHERRY_TREE
 

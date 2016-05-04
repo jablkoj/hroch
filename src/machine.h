@@ -24,6 +24,7 @@ public:
 
 class MachineLinear: public Machine {
     vector<vector<double>> data;
+protected:
     vector<double> coef;
     double intercept;
 public:
@@ -34,10 +35,9 @@ public:
     
 };
 
-/*
-class MachineNeuron: public Machine {
-
+class MachineLinearStrict: public MachineLinear {
+public:
+    void load();
 };
-*/
 
 #endif

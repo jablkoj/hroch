@@ -13,7 +13,9 @@ void generate_test() {
     for(int i = 100; i < 200; ++i) generate_history(0.04, "F4"+to_string(i));
 }
 
-void generate_train() {
+void generate_all() {
+    // if random seed is same, we have to generate histories sequential
+    generate_test();
     for(int i = 10000; i < 15000; ++i) generate_history(0.04, "L4"+to_string(i));
 }
 
@@ -49,9 +51,9 @@ void test_candi() {
         h1->proc_test_candi(CHERRY_NO,"1nc");
         h1->proc_test_candi(CHERRY_TREE,"1ct");
         h1->proc_test_candi(CHERRY_LEN,"1cl");
-        h1->proc_test_candi(SCORE_BAC_NC," nc");
+        h1->proc_test_candi(SCORE_BAC_NC,"nc ");
         h1->proc_test_candi(SCORE_BAC,"def");
-        h1->proc_test_candi(SCORE_CL," cl");
+        h1->proc_test_candi(SCORE_CL,"cl ");
     
         h1->write_stats(file);
         file << endl;
@@ -67,7 +69,9 @@ void test_candi() {
 void test_score() {
     map<string, vector<double>> stat_val;
     string prefix = TEST_CASE;
-    ofstream file("stats/score-stats"+prefix);
+    string strictsuffix = "";
+    if (strict_compare) strictsuffix = "strict";
+    ofstream file("stats/score-stats"+prefix+strictsuffix);
 
     for(int hid = LOWER_RANGE; hid<UPPER_RANGE; ++hid) {
         History* h0 = new History(DATAPATH "generated", prefix+to_string(hid));
@@ -75,9 +79,10 @@ void test_score() {
         h1->stats["_name"] = hid;
         
         h1->proc_test_score(CHERRY_TREE,"1ct");
-        h1->proc_test_score(SCORE_BAC_NC," nc");
+        h1->proc_test_score(SCORE_BAC_NC,"nc ");
         h1->proc_test_score(SCORE_BAC,"def");
-        h1->proc_test_score(SCORE_LR," lr");
+        h1->proc_test_score(SCORE_LR,"lr ");
+        h1->proc_test_score(SCORE_LRS,"lrs");
     
         h1->write_stats(file);
         file << endl;
@@ -144,9 +149,10 @@ void reconstruct_one(History* h0, string hid, int strategy) {
     if (strategy == SCORE_BAC_NC) machine = new MachineBachelor();
     if (strategy == SCORE_BAC) machine = new MachineBachelor();
     if (strategy == SCORE_LR) machine = new MachineLinear();
+    if (strategy == SCORE_LRS) machine = new MachineLinearStrict();
     if (machine != nullptr) machine->load();
 
-    int attempts = 1000;
+    int attempts = 20000;
     int max_events = 0;
     double avg_num_events = 0.0;
     vector<int> dist_num_events(1000,0);
@@ -197,11 +203,12 @@ void reconstruct_many(string hid) {
     }
     delete hsp;
     //reconstruct_one(h0, hid, CHERRY_NO);
-    //reconstruct_one(h0, hid, CHERRY_TREE);
+    reconstruct_one(h0, hid, CHERRY_TREE);
     //reconstruct_one(h0, hid, CHERRY_LEN);
-    //reconstruct_one(h0, hid, SCORE_BAC_NC);
+    reconstruct_one(h0, hid, SCORE_BAC_NC);
     reconstruct_one(h0, hid, SCORE_BAC);
     reconstruct_one(h0, hid, SCORE_LR);
+    reconstruct_one(h0, hid, SCORE_LRS);
     delete h0;
 }
 
@@ -233,10 +240,22 @@ void reconstruct(string atoms_file, string trees_dir, int count, int strategy) {
             for(auto hp : hists) delete hp;
             hists.clear();
         }
-        hists.push_back(h);
-
+        if (num_events == shortest) {
+            hists.push_back(h);
+        }
+        h->write_events(ofile);
+        ofile << endl;
     }
+    while(lengths.back() == 0) lengths.pop_back();
 
+    for(auto h : hists) {
+        h->write_events(cout);
+        cout << endl;
+    }
+    cout << shortest << endl;
+    cout << lengths << endl;
+    ofile << shortest << endl;
+    ofile << lengths << endl;
     if (machine != nullptr) delete machine;
     ofile.close();
 }
@@ -258,7 +277,7 @@ void help(string name) {
 
     cout << endl << "other (undocumented) options:" << endl;
     cout << "  --gen-test:      generate test data" << endl;
-    cout << "  --gen-train:     generate train data" << endl;
+    cout << "  --gen-all:       generate test and train data" << endl;
     cout << "  --train:         produce lr-train file" << endl;
     cout << "  --test-c:        make statistics of candidate proposal algorithms" << endl;
     cout << "  --test-s:        make statistics of scoring algorithms" << endl;
@@ -275,7 +294,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (args.count("--gen-test")) generate_test();
-    if (args.count("--gen-train")) generate_train();
+    if (args.count("--gen-all")) generate_all();
     if (args.count("--train")) train();
     if (args.count("--test-c")) test_candi();
     if (args.count("--test-s")) test_score();

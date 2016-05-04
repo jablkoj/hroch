@@ -53,6 +53,11 @@ set<Candidate> History::rec_candidates(HEvent* event) {
         Candidate c = d.get_candidate();
         if (c.is_valid()) res.insert(c);
     }
+    for(auto c : res) {
+        c.swap_dir();
+        res.insert(c);
+    }
+    
     return res;
 }
 
@@ -208,6 +213,7 @@ void History::proc_test_score(int strategy, string mark) {
     if (strategy == SCORE_BAC_NC) machine = new MachineBachelor();
     if (strategy == SCORE_BAC) machine = new MachineBachelor();
     if (strategy == SCORE_LR) machine = new MachineLinear();
+    if (strategy == SCORE_LRS) machine = new MachineLinearStrict();
     if (machine != nullptr) machine->load();
     set_strategy(strategy, machine);
 

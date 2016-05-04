@@ -87,6 +87,16 @@ void GHistory::save_to_files(string basename, string id) {
 
 void GHistory::write_stats(ostream& os) {
     os << "Number of events: " << SIZE(events) << endl;
+    int atc = 0;
+    set<int> att;
+    ForGAtom(atom, sequences.back()) {
+        if (atom->get_id() != 0) {
+            atc++;
+            att.insert(abs(atom->get_id()));
+        }
+    }
+    os << "Number of atoms: " << atc << endl;
+    os << "Number of types: " << SIZE(att) << endl;
     int dashes = 0;
     ForGAtom(atom, sequences.back()) {
         if (atom->get_id() == 0) os << "(";

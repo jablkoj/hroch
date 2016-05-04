@@ -65,8 +65,11 @@ GEvent* Model::get_random_event(int sequence_length) {
     if (this->is_random_del()) {
         return new GEventDel(from, from + length, time_interval);
     } else {
-        int to = random_int(0, sequence_length - length + 1);
-        if (to > from) to += length;
+        int to = -1;
+        while (to < 0 || to > sequence_length) {
+            int dist = this->get_random_dist();
+            to = (rand()%2)?from-dist:from+length+dist;
+        }
         if (this->is_random_inv()) {
             return new GEventDupi(from, from+length, to, time_interval);
         } else {

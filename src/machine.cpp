@@ -36,6 +36,19 @@ void MachineLinear::load() {
     file >> intercept;
     file.close();
 }
+void MachineLinearStrict::load() {
+    ifstream file("regres/lr-model-strict", fstream::in);
+    int n;
+    double x;
+    file >> n;
+    For(i, n) {
+        file >> x;
+        coef.push_back(x);
+    }
+    file >> intercept;
+    file.close();
+}
+
 double MachineLinear::predict(const vector<double>& values) {
     assert(SIZE(values) == SIZE(coef));
     double res = intercept;
